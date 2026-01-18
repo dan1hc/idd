@@ -44,6 +44,48 @@ gh repo create my-project --template dan1hc/idd
 curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash
 ```
 
+---
+
+## Quick Start
+
+### The Loop
+
+Every AI session follows this pattern:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  1. COMPILE      .github/idd/compile.sh <feature>        │
+│  2. SELECT       Add .github/agents/agent.md to chat     │
+│  3. PROMPT       "Implement the feature in agent.md"     │
+│  4. REPEAT       Go back to step 1                       │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Copy-Paste Commands
+
+**Compile (new feature):**
+```bash
+.github/idd/compile.sh <feature-name>
+```
+
+**Compile (bootstrap existing codebase):**
+```bash
+.github/idd/compile.sh --bootstrap
+```
+
+**Prompt (paste this into your AI chat after selecting agent.md):**
+```
+Implement the feature in agent.md
+```
+
+### Why Re-Compile?
+
+The AI updates `layers.md` (with detected patterns) and your feature file (with glossary entries). These changes only appear in `agent.md` after you re-compile. 
+
+**Always re-compile before each AI session.**
+
+---
+
 ## Usage
 
 ### Scenario A: New Feature (any codebase)
@@ -79,26 +121,20 @@ Users can log in with email and password to receive a JWT token.
 ```
 
 ```bash
-# 3. Compile
+# 3. Compile → Select agent.md → Prompt → Repeat (see Quick Start)
 .github/idd/compile.sh user-auth
-
-# 4. Point AI to the compiled instructions
-# "Implement the feature in .github/agents/agent.md"
 ```
 
-**What happens:** AI reads the compiled instructions, detects your codebase patterns (formatting, testing, logging conventions), implements the feature matching your style, then updates the glossary with semantic anchors.
+**What happens:** AI reads the compiled instructions, detects your codebase patterns (formatting, testing, logging conventions), implements the feature matching your style, then updates the glossary with semantic anchors. Re-compile and repeat until complete.
 
 ### Scenario B: Existing Codebase (bootstrap)
 
 ```bash
-# 1. Compile in bootstrap mode
+# 1. Compile → Select agent.md → Prompt → Repeat (see Quick Start)
 .github/idd/compile.sh --bootstrap
-
-# 2. Point AI to the compiled instructions
-# "Generate feature files for this codebase following .github/agents/agent.md"
 ```
 
-**What happens:** AI analyzes your codebase, identifies logical feature boundaries (auth, billing, etc.), generates feature files with pre-populated glossaries, and optionally adds IDD markers to your code.
+**What happens:** AI analyzes your codebase, identifies logical feature boundaries (auth, billing, etc.), generates feature files with pre-populated glossaries, and optionally adds IDD markers to your code. Re-compile and repeat until complete.
 
 After bootstrapping, use Scenario A for new features.
 

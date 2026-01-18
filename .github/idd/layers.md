@@ -1,7 +1,18 @@
 # IDD Layers: Detection & Principles
 
 > **CRITICAL**: Before implementing ANY feature, complete the Detection Checklist below.
-> Copy-paste actual code snippets from the codebase as evidence. Do not guess.
+> Copy-paste actual code snippets from the codebase as evidence. If no pattern found, use fallback.
+
+**For large codebases:** This may require multiple passes. Track progress **in this file** (`.github/idd/layers.md`):
+- [ ] Formatting (detected or fallback)
+- [ ] Coding style (detected or fallback)
+- [ ] Testing patterns (detected or fallback)
+- [ ] Logging patterns (detected or fallback)
+- [ ] Security patterns (detected or fallback)
+- [ ] API patterns (detected or fallback)
+- [ ] Runtime/config (detected or fallback)
+
+Update this file as you progress. Each session should pick up where the last left off.
 
 ---
 
@@ -10,28 +21,33 @@
 Before writing code, fill this out by searching the codebase:
 
 ```
-LANGUAGE: [detected from file extensions, package files]
-FRAMEWORK: [detected from dependencies]
-PACKAGE_MANAGER: [npm/yarn/pnpm/pip/poetry/cargo/go mod]
+LANGUAGE: 
+FRAMEWORK: 
+PACKAGE_MANAGER: 
 
 FORMATTING:
-  indent: [spaces/tabs, size - check .editorconfig or sample file]
-  quotes: [single/double - grep for patterns]
-  line_length: [number - check config or observe]
+  indent: 
+  quotes: 
+  line_length: 
   
 PATTERNS:
-  error_handling: [paste 3-line example from codebase]
-  function_style: [paste example showing naming, params, returns]
-  imports: [paste import block showing ordering]
+  error_handling: 
+
+  function_style: 
+
+  imports: 
+
   
 TESTING:
-  location: [tests/ or alongside or __tests__/]
-  naming: [test_* or *.test.* or *_test.*]
-  example: [paste a test function signature]
+  location: 
+  naming: 
+  example: 
+
   
 LOGGING:
-  library: [name]
-  example: [paste a log statement from codebase]
+  library: 
+  example: 
+
 ```
 
 **If a section has no existing code to reference, write "GREENFIELD" and use fallbacks.**

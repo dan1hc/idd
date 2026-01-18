@@ -1,6 +1,6 @@
 # Post-Implementation: Update Glossary
 
-> After implementing, you MUST update the feature file.
+> After implementing, you MUST update the feature file at `.github/idd/features/<feature-name>.md`
 
 ---
 
@@ -22,7 +22,9 @@ Where to add:
 
 ---
 
-## 2. Update Glossary
+## 2. Update Glossary in Feature File
+
+Open `.github/idd/features/<feature-name>.md` and update the `## Glossary` section.
 
 Use semantic anchors (NOT line numbers):
 
@@ -43,7 +45,9 @@ Use semantic anchors (NOT line numbers):
 
 ---
 
-## 3. Update Status
+## 3. Update Status in Feature File
+
+In the same `.github/idd/features/<feature-name>.md` file, update:
 
 ```markdown
 > **Status**: `complete`
@@ -55,4 +59,4 @@ Use semantic anchors (NOT line numbers):
 
 ---
 
-**Why this matters:** Glossaries let AI maintain code later. Keep them accurate.
+**Why this matters:** The glossary in each feature file is that feature's memory. Keep it accurate so AI can maintain the code later.

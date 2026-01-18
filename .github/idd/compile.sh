@@ -23,11 +23,11 @@ fi
 if [[ "$1" == "--bootstrap" ]]; then
     mkdir -p "$AGENTS_DIR"
     {
-        cat "$IDD_DIR/bootstrap.md"
+        cat "$IDD_DIR/layers.md"
         echo ""
         echo "---"
         echo ""
-        cat "$IDD_DIR/layers.md"
+        cat "$IDD_DIR/bootstrap.md"
         echo ""
         echo "---"
         echo ""
