@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IDD - Quickstart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181b;
+      --bg-card: #1c1c1f;
+      --border: #27272a;
+      --border-hover: #3f3f46;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent: #22c55e;
+      --accent-dim: #16a34a;
+      --accent-glow: rgba(34, 197, 94, 0.15);
+      --warning: #f59e0b;
+      --info: #3b82f6;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 10, 11, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+    }
+
+    nav {
+      display: flex;
+      gap: 2rem;
+    }
+
+    nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 8rem 2rem 4rem;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dim);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card);
+      border-color: var(--border-hover);
+    }
+
+    /* Mode Selector */
+    .mode-selector {
+      max-width: 900px;
+      margin: 0 auto 4rem;
+      padding: 0 2rem;
+    }
+
+    .mode-selector h2 {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .mode-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .mode-card {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .mode-card.active {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .mode-card h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .mode-card p {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .mode-icon {
+      font-size: 1.25rem;
+    }
+
+    /* Main Content */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem 4rem;
+    }
+
+    /* Steps */
+    .steps {
+      display: none;
+    }
+
+    .steps.active {
+      display: block;
+    }
+
+    .step {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .step-header {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .step-header:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      color: #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+
+    .step.completed .step-number {
+      background: var(--accent-dim);
+    }
+
+    .step.completed .step-number::after {
+      content: '✓';
+    }
+
+    .step.completed .step-number span {
+      display: none;
+    }
+
+    .step-title {
+      flex: 1;
+    }
+
+    .step-title h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.125rem;
+    }
+
+    .step-title p {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    .step-toggle {
+      color: var(--text-muted);
+      transition: transform 0.2s;
+    }
+
+    .step.open .step-toggle {
+      transform: rotate(180deg);
+    }
+
+    .step-content {
+      display: none;
+      padding: 0 1.5rem 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .step.open .step-content {
+      display: block;
+      padding-top: 1.5rem;
+    }
+
+    .step-content p {
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    /* Code Blocks */
+    .code-block {
+      position: relative;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-lang {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .copy-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-card);
+    }
+
+    .copy-btn.copied {
+      color: var(--accent);
+    }
+
+    pre {
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.7;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .inline-code {
+      background: var(--bg-tertiary);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.875em;
+      color: var(--accent);
+    }
+
+    /* Syntax Highlighting */
+    .token-comment { color: var(--text-muted); }
+    .token-keyword { color: #c678dd; }
+    .token-string { color: #98c379; }
+    .token-variable { color: #e5c07b; }
+    .token-command { color: var(--accent); }
+    .token-flag { color: #56b6c2; }
+    .token-path { color: #61afef; }
+
+    /* Info Boxes */
+    .info-box {
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-sm);
+      margin: 1rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .info-box.tip {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .info-box.warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .info-box.info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .info-box-icon {
+      font-size: 1.125rem;
+      flex-shrink: 0;
+    }
+
+    .info-box p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* The Loop Diagram */
+    .loop-diagram {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin: 1.5rem 0;
+    }
+
+    .loop-steps {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .loop-step {
+      text-align: center;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .loop-step-number {
+      width: 48px;
+      height: 48px;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.75rem;
+      font-weight: 600;
+      font-size: 1.125rem;
+    }
+
+    .loop-step.active .loop-step-number {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+
+    .loop-step h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .loop-step p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .loop-arrow {
+      color: var(--text-muted);
+      font-size: 1.5rem;
+    }
+
+    .loop-back {
+      width: 100%;
+      text-align: center;
+      padding-top: 1rem;
+      margin-top: 1rem;
+      border-top: 1px dashed var(--border);
+    }
+
+    .loop-back span {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+
+    /* File Tree */
+    .file-tree {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      margin: 1rem 0;
+    }
+
+    .file-tree-item {
+      padding: 0.25rem 0;
+      color: var(--text-secondary);
+    }
+
+    .file-tree-item.folder {
+      color: var(--info);
+    }
+
+    .file-tree-item.file {
+      color: var(--text-primary);
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      margin-bottom: 2rem;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--bg-tertiary);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* Table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.875rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-table th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+    }
+
+    .comparison-table td:first-child {
+      color: var(--text-muted);
+    }
+
+    .comparison-table td:last-child {
+      color: var(--accent);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .hero h1 {
+        font-size: 2rem;
+      }
+
+      .hero p {
+        font-size: 1rem;
+      }
+
+      nav {
+        display: none;
+      }
+
+      .loop-arrow {
+        display: none;
+      }
+
+      .loop-steps {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a href="#" class="logo">
+        <div class="logo-icon">⟡</div>
+        IDD
+      </a>
+      <nav>
+        <a href="https://github.com/dan1hc/idd">GitHub</a>
+        <a href="https://github.com/dan1hc/idd#readme">Docs</a>
+        <a href="https://github.com/dan1hc/idd/blob/main/LICENSE">License</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>Quickstart Guide</h1>
+    <p>Get IDD running in your project in under 5 minutes. Write specs, let AI implement, keep a glossary of what was built.</p>
+    <div class="hero-cta">
+      <a href="#get-started" class="btn btn-primary">
+        Get Started
+      </a>
+      <a href="https://github.com/dan1hc/idd#readme" class="btn btn-secondary">
+        Read the Docs
+      </a>
+    </div>
+  </div>
+
+  <section class="mode-selector" id="get-started">
+    <h2>Choose Your Path</h2>
+    <div class="mode-cards">
+      <div class="mode-card active" data-mode="new">
+        <h3><span class="mode-icon">🚀</span> New Project</h3>
+        <p>Start fresh with IDD as your project template. Best for greenfield development.</p>
+      </div>
+      <div class="mode-card" data-mode="existing">
+        <h3><span class="mode-icon">📦</span> Existing Project</h3>
+        <p>Add IDD to an existing codebase. Bootstrap will map your current code.</p>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <!-- New Project Steps -->
+    <div class="steps active" id="steps-new">
+      <div class="progress-container">
+        <div class="progress-label">
+          <span>Progress</span>
+          <span id="progress-new-text">0 of 4 steps</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-new-fill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="step open" data-step="1">
+        <div class="step-header">
+          <div class="step-number"><span>1</span></div>
+          <div class="step-title">
+            <h3>Create Repository from Template</h3>
+            <p>Use GitHub CLI to scaffold your project</p>
+          </div>
+          <div class="step-toggle">▼</div>
+        </div>
+        <div class="step-content">
+          <p>The fastest way to start is using IDD as a GitHub template. This gives you the complete framework with a single command.</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" data-copy="gh repo create my-project --template dan1hc/idd">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code><span class="token-command">gh</span> <span class="token-variable">repo create</span> <span class="token-string">my-project</span> <span class="token-flag">--template</span> <span class="token-path">dan1hc/idd</span></code></pre>
+          </div>
+
+          <div class="info-box tip">
+            <span class="info-box-icon">💡</span>
+            <p>Don't have the GitHub CLI? Install it with <code class="inline-code">brew install gh</code> or download from <a href="https://cli.github.com" style="color: var(--accent)">cli.github.com</a></p>
+          </div>
+
+          <p>After creation, clone your new repo:</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" data-copy="gh repo clone my-project && cd my-project">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code><span class="token-command">gh</span> <span class="token-variable">repo clone</span> <span class="token-string">my-project</span> <span class="token-keyword">&&</span> <span class="token-command">cd</span> <span class="token-path">my-project</span></code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="2">
+        <div class="step-header">
+          <div class="step-number"><span>2</span></div>
+          <div class="step-title">
+            <h3>Create Your First Feature Spec</h3>
+            <p>Define what you want to build</p>
+          </div>
+          <div class="step-toggle">▼</div>
+        </div>
+        <div class="step-content">
+          <p>Copy the template and write your feature specification in plain markdown.</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" data-copy="cp .github/idd/features/_template.md .github/idd/features/my-feature.md">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code><span class="token-command">cp</span> <span class="token-path">.github/idd/features/_template.md</span> <span class="token-path">.github/idd/features/my-feature.md</span></code></pre>
+          </div>
+
+          <p>Edit the file with your requirements:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">markdown</span>
+              <button class="copy-btn" data-copy="# Feature: My Feature
+
+> **Status**: `draft`
+
+## What
+
+A clear description of what this feature does.
+
+## Acceptance Criteria
+
+- [ ] First requirement
+- [ ] Second requirement
+- [ ] Third requirement
+
+## Glossary
+
+| What | Where |
+|------|-------|
+| | |">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code><span class="token-keyword"># Feature:</span> <span class="token-string">My Feature</span>
+
+<span class="token-comment">> **Status**: `draft`</span>
+
+<span class="token-keyword">## What</span>
+
+A clear description of what this feature does.
+
+<span class="token-keyword">## Acceptance Criteria</span>
+
+- [ ] First requirement
+- [ ] Second requirement
+- [ ] Third requirement
+
+<span class="token-keyword">## Glossary</span>
+
+| What | Where |
+|------|-------|
+| | |</code></pre>
+          </div>
+
+          <div class="info-box info">
+            <span class="info-box-icon">ℹ️</span>
+            <p>The glossary starts empty. AI will populate it with semantic anchors pointing to the code it generates.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="3">
+        <div class="step-header">
+          <div class="step-number"><span>3</span></div>
+          <div class="step-title">
+            <h3>Compile Your Instructions</h3>
+            <p>Merge spec + patterns + glossary rules into agent.md</p>
+          </div>
+          <div class="step-toggle">▼</div>
+        </div>
+        <div class="step-content">
+          <p>The compile step creates a single instruction file for your AI assistant by merging pattern detection, your feature spec, and glossary update rules.</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" data-copy=".github/idd/compile.sh my-feature">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code><span class="token-path">.github/idd/compile.sh</span> <span class="token-string">my-feature</span></code></pre>
+          </div>
+
+          <p>This generates <code class="inline-code">.github/agents/agent.md</code> containing:</p>
+
+          <div class="file-tree">
+            <div class="file-tree-item">📄 agent.md</div>
+            <div class="file-tree-item" style="padding-left: 1rem;">├─ layers.md <span style="color: var(--text-muted)">← Pattern detection + fallbacks</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">├─ my-feature.md <span style="color: var(--text-muted)">← Your requirements</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">└─ post-implement.md <span style="color: var(--text-muted)">← Glossary instructions</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="4">
+        <div class="step-header">
+          <div class="step-number"><span>4</span></div>
+          <div class="step-title">
+            <h3>Run The Loop</h3>
+            <p>Compile → Select → Prompt → Repeat</p>
+          </div>
+          <div class="step-toggle">▼</div>
+        </div>
+        <div class="step-content">
+          <p>Every AI session follows this pattern:</p>
+
+          <div class="loop-diagram">
+            <div class="loop-steps">
+              <div class="loop-step active">
+                <div class="loop-step-number">1</div>
+                <h4>COMPILE</h4>
+                <p>compile.sh &lt;feature&gt;</p>
+              </div>
+              <div class="loop-arrow">→</div>
+              <div class="loop-step">
+                <div class="loop-step-number">2</div>
+                <h4>SELECT</h4>
+                <p>Add agent.md to chat</p>
+              </div>
+              <div class="loop-arrow">→</div>
+              <div class="loop-step">
+                <div class="loop-step-number">3</div>
+                <h4>PROMPT</h4>
+                <p>"Implement the feature"</p>
+              </div>
+              <div class="loop-arrow">→</div>
+              <div class="loop-step">
+                <div class="loop-step-number">4</div>
+                <h4>REPEAT</h4>
+                <p>Go back to step 1</p>
+              </div>
+            </div>
+            <div class="loop-back">
+              <span>↩ Always re-compile before each AI session</span>
+            </div>
+          </div>
+
+          <p>Use this exact prompt after selecting <code class="inline-code">agent.md</code> in your AI chat:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">prompt</span>
+              <button class="copy-btn" data-copy="Implement the feature in agent.md">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code>Implement the feature in agent.md</code></pre>
+          </div>
+
+          <div class="info-box warning">
+            <span class="info-box-icon">⚠️</span>
+            <p><strong>Why re-compile?</strong> The AI updates your feature file with glossary entries. These changes only appear in agent.md after you re-compile.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing Project Steps -->
+    <div class="steps" id="steps-existing">
+      <div class="progress-container">
+        <div class="progress-label">
+          <span>Progress</span>
+          <span id="progress-existing-text">0 of 4 steps</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-existing-fill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="step open" data-step="1">
+        <div class="step-header">
+          <div class="step-number"><span>1</span></div>
+          <div class="step-title">
+            <h3>Install IDD in Your Project</h3>
+            <p>One command to add the framework files</p>
+          </div>
+          <div class="step-toggle">▼</div>
+        </div>
+        <div class="step-content">
+          <p>Run the installer from your project root. It adds the IDD framework without touching your existing code.</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code><span class="token-command">curl</span> <span class="token-flag">-fsSL</span> <span class="token-path">https://raw.githubusercontent.com/dan1hc/idd/main/install.sh</span> <span class="token-keyword">|</span> <span class="token-command">bash</span></code></pre>
+          </div>
+
+          <p>This creates the following structure:</p>
+
+          <div class="file-tree">
+            <div class="file-tree-item folder">📁 .github/idd/</div>
+            <div class="file-tree-item file" style="padding-left: 1rem;">├─ compile.sh</div>
+            <div class="file-tree-item file" style="padding-left: 1rem;">├─ layers.md</div>
+            <div class="file-tree-item file" style="padding-left: 1rem;">├─ bootstrap.md</div>
+            <div class="file-tree-item file" style="padding-left: 1rem;">├─ post-implement.md</div>
+            <div class="file-tree-item folder" style="padding-left: 1rem;">└─ 📁 features/</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">└─ _template.md</div>
+          </div>
+
+          <div class="info-box tip">
+            <span class="info-box-icon">💡</span>
+            <p><strong>5 files. ~400 lines.</strong> That's the whole framework.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="2">
+        <div class="step-header">
+          <div class="step-number"><span>2</span></div>
+          <div class="step-title">
+            <h3>Bootstrap Your Codebase</h3>
+            <p>Let AI map your existing code into features</p>
+          </div>
+          <div class="step-toggle">▼</div>
+        </div>
+        <div class="step-content">
+          <p>The bootstrap process analyzes your codebase, identifies logical feature boundaries, and generates feature files with pre-populated glossaries.</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" data-copy=".github/idd/compile.sh --bootstrap">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code><span class="token-path">.github/idd/compile.sh</span> <span class="token-flag">--bootstrap</span></code></pre>
+          </div>
+
+          <p>Then run the loop (compile → select agent.md → prompt → repeat) until complete.</p>
+
+          <div class="info-box info">
+            <span class="info-box-icon">ℹ️</span>
+            <p><strong>What happens:</strong> AI creates feature files like <code class="inline-code">auth.md</code>, <code class="inline-code">billing.md</code> based on your code structure, with glossaries already populated.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="3">
+        <div class="step-header">
+          <div class="step-number"><span>3</span></div>
+          <div class="step-title">
+            <h3>Review Generated Features</h3>
+            <p>Check and refine the AI-generated feature files</p>
+          </div>
+          <div class="step-toggle">▼</div>
+        </div>
+        <div class="step-content">
+          <p>After bootstrapping, review the generated feature files in <code class="inline-code">.github/idd/features/</code>. Each file should have:</p>
+
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>What</td>
+                <td>Description of the feature</td>
+              </tr>
+              <tr>
+                <td>Acceptance Criteria</td>
+                <td>Checklist of requirements</td>
+              </tr>
+              <tr>
+                <td>Glossary</td>
+                <td>Semantic anchors to code locations</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>The glossary uses semantic anchors that survive refactoring:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">markdown</span>
+              <button class="copy-btn" data-copy="| What | Where |
+|------|-------|
+| Login handler | `src/auth.py::authenticate` |
+| Validation logic | `src/auth.py::#user-auth:validate` |
+| Auth tests | `tests/test_auth.py::TestLogin` |">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code>| What | Where |
+|------|-------|
+| Login handler | <span class="token-path">`src/auth.py::authenticate`</span> |
+| Validation logic | <span class="token-path">`src/auth.py::#user-auth:validate`</span> |
+| Auth tests | <span class="token-path">`tests/test_auth.py::TestLogin`</span> |</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" data-step="4">
+        <div class="step-header">
+          <div class="step-number"><span>4</span></div>
+          <div class="step-title">
+            <h3>Start Building New Features</h3>
+            <p>Use the standard IDD loop for new development</p>
+          </div>
+          <div class="step-toggle">▼</div>
+        </div>
+        <div class="step-content">
+          <p>With your codebase bootstrapped, follow the standard workflow for new features:</p>
+
+          <div class="loop-diagram">
+            <div class="loop-steps">
+              <div class="loop-step active">
+                <div class="loop-step-number">1</div>
+                <h4>COMPILE</h4>
+                <p>compile.sh &lt;feature&gt;</p>
+              </div>
+              <div class="loop-arrow">→</div>
+              <div class="loop-step">
+                <div class="loop-step-number">2</div>
+                <h4>SELECT</h4>
+                <p>Add agent.md to chat</p>
+              </div>
+              <div class="loop-arrow">→</div>
+              <div class="loop-step">
+                <div class="loop-step-number">3</div>
+                <h4>PROMPT</h4>
+                <p>"Implement the feature"</p>
+              </div>
+              <div class="loop-arrow">→</div>
+              <div class="loop-step">
+                <div class="loop-step-number">4</div>
+                <h4>REPEAT</h4>
+                <p>Go back to step 1</p>
+              </div>
+            </div>
+            <div class="loop-back">
+              <span>↩ Always re-compile before each AI session</span>
+            </div>
+          </div>
+
+          <p>Create a new feature:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">bash</span>
+              <button class="copy-btn" data-copy="cp .github/idd/features/_template.md .github/idd/features/new-feature.md">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code><span class="token-command">cp</span> <span class="token-path">.github/idd/features/_template.md</span> <span class="token-path">.github/idd/features/new-feature.md</span></code></pre>
+          </div>
+
+          <div class="info-box tip">
+            <span class="info-box-icon">💡</span>
+            <p>The AI now has context from your bootstrapped glossaries, so it will match your existing patterns and conventions.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Benefits Section -->
+    <section style="margin-top: 3rem;">
+      <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; text-align: center;">Why IDD?</h2>
+      
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Without IDD</th>
+            <th>With IDD</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AI guesses your conventions</td>
+            <td>AI detects and matches your patterns</td>
+          </tr>
+          <tr>
+            <td>No record of AI-generated code</td>
+            <td>Glossary maps features → code</td>
+          </tr>
+          <tr>
+            <td>Each session starts from zero</td>
+            <td>Glossaries carry context forward</td>
+          </tr>
+          <tr>
+            <td>"Where did this code come from?"</td>
+            <td><code class="inline-code">grep IDD:feature-name</code> finds it</td>
+          </tr>
+          <tr>
+            <td>Refactoring breaks references</td>
+            <td>Semantic anchors survive refactoring</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      IDD is open source under the <a href="https://github.com/dan1hc/idd/blob/main/LICENSE">LGPL License</a>.
+      <br>
+      <a href="https://github.com/dan1hc/idd">GitHub</a> · <a href="https://github.com/dan1hc/idd#readme">Documentation</a>
+    </p>
+  </footer>
+
+  <script>
+    // Mode selection
+    const modeCards = document.querySelectorAll('.mode-card');
+    const stepsContainers = document.querySelectorAll('.steps');
+
+    modeCards.forEach(card => {
+      card.addEventListener('click', () => {
+        // Update active card
+        modeCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+
+        // Show corresponding steps
+        const mode = card.dataset.mode;
+        stepsContainers.forEach(container => {
+          container.classList.remove('active');
+          if (container.id === `steps-${mode}`) {
+            container.classList.add('active');
+          }
+        });
+      });
+    });
+
+    // Step accordion
+    const steps = document.querySelectorAll('.step');
+
+    steps.forEach(step => {
+      const header = step.querySelector('.step-header');
+      header.addEventListener('click', () => {
+        const wasOpen = step.classList.contains('open');
+        
+        // Close all steps in same container
+        const container = step.closest('.steps');
+        container.querySelectorAll('.step').forEach(s => s.classList.remove('open'));
+        
+        // Toggle clicked step
+        if (!wasOpen) {
+          step.classList.add('open');
+        }
+      });
+    });
+
+    // Copy buttons
+    const copyButtons = document.querySelectorAll('.copy-btn');
+
+    copyButtons.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const text = btn.dataset.copy;
+        
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.classList.add('copied');
+          btn.querySelector('span').textContent = 'Copied!';
+          
+          setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.querySelector('span').textContent = 'Copy';
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+      });
+    });
+
+    // Mark steps complete on scroll/interaction
+    const updateProgress = (containerId) => {
+      const container = document.getElementById(containerId);
+      const steps = container.querySelectorAll('.step');
+      const progressFill = document.getElementById(`progress-${containerId.replace('steps-', '')}-fill`);
+      const progressText = document.getElementById(`progress-${containerId.replace('steps-', '')}-text`);
+      
+      const completedCount = container.querySelectorAll('.step.completed').length;
+      const percentage = (completedCount / steps.length) * 100;
+      
+      progressFill.style.width = `${percentage}%`;
+      progressText.textContent = `${completedCount} of ${steps.length} steps`;
+    };
+
+    // Mark step as complete when opened
+    steps.forEach(step => {
+      step.addEventListener('click', () => {
+        setTimeout(() => {
+          if (step.classList.contains('open')) {
+            step.classList.add('completed');
+            const containerId = step.closest('.steps').id;
+            updateProgress(containerId);
+          }
+        }, 500);
+      });
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

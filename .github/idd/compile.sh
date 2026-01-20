@@ -34,7 +34,6 @@ if [[ "$1" == "--bootstrap" ]]; then
         cat "$IDD_DIR/post-implement.md"
     } > "$OUTPUT_FILE"
     echo -e "${GREEN}✓${NC} Bootstrap mode: $OUTPUT_FILE"
-    echo "  Ask AI: 'Generate feature files for this codebase following .github/agents/agent.md'"
     exit 0
 fi
 

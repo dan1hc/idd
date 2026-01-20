@@ -1,0 +1,65 @@
+name: main
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+      deployments: write
+      id-token: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'push' && github.ref_name || github.head_ref }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: Install dependencies
+        run: npm install @semantic-release/changelog @semantic-release/git
+      - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
+        run: npm audit signatures
+      - name: PreRelease
+        if: ${{ github.event_name == 'pull_request' }}
+        run: unset GITHUB_ACTIONS && npx semantic-release --no-ci
+      - name: Release
+        if: ${{ github.event_name != 'pull_request' }}
+        run: npx semantic-release
+
+  pages:
+    name: pages
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    needs: release
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
