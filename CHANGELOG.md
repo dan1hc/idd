@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/dan1hc/idd/compare/v1.0.0...v1.0.1) (2026-01-20)
+
+
+### Bug Fixes
+
+* need index.html for pages ([6962247](https://github.com/dan1hc/idd/commit/69622477ca53385f956800c865119de72137fe8a))
+
 # 1.0.0 (2026-01-20)
 
 
