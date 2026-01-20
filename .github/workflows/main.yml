@@ -25,6 +25,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'push' && github.ref_name || github.head_ref }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -35,9 +36,13 @@ jobs:
         run: npm audit signatures
       - name: PreRelease
         if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: unset GITHUB_ACTIONS && npx semantic-release --no-ci
       - name: Release
         if: ${{ github.event_name != 'pull_request' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: npx semantic-release
 
   pages:
