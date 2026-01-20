@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/dan1hc/idd/compare/v1.0.1...v1.0.2) (2026-01-20)
+
+
+### Bug Fixes
+
+* should not need main.yml to deploy pages ([ced2303](https://github.com/dan1hc/idd/commit/ced2303df501405ac3aed56a7936de99d9c1238c))
+
 ## [1.0.1](https://github.com/dan1hc/idd/compare/v1.0.0...v1.0.1) (2026-01-20)
 
 
