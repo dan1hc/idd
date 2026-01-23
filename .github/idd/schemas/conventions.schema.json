@@ -1,0 +1,299 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IDD Conventions",
+  "description": "Detected codebase patterns and conventions for consistent AI implementation",
+  "type": "object",
+  "required": ["language", "formatting", "detected_at"],
+  "properties": {
+    "detected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp of when detection was run"
+    },
+    "language": {
+      "type": "string",
+      "description": "Primary programming language",
+      "examples": ["python", "typescript", "go", "rust", "java"]
+    },
+    "framework": {
+      "type": ["string", "null"],
+      "description": "Primary framework if detected",
+      "examples": ["fastapi", "express", "gin", "spring", "nextjs"]
+    },
+    "package_manager": {
+      "type": ["string", "null"],
+      "description": "Package manager in use",
+      "examples": ["pip", "poetry", "npm", "yarn", "pnpm", "go mod", "cargo"]
+    },
+    "formatting": {
+      "type": "object",
+      "required": ["indent", "source"],
+      "properties": {
+        "indent": {
+          "type": "string",
+          "description": "Indentation style",
+          "examples": ["2 spaces", "4 spaces", "tabs"]
+        },
+        "quotes": {
+          "type": "string",
+          "enum": ["single", "double", "backtick"],
+          "description": "String quote preference"
+        },
+        "line_length": {
+          "type": "integer",
+          "minimum": 40,
+          "maximum": 200,
+          "description": "Maximum line length"
+        },
+        "trailing_comma": {
+          "type": "boolean",
+          "description": "Whether trailing commas are used"
+        },
+        "semicolons": {
+          "type": "boolean",
+          "description": "Whether semicolons are required (JS/TS)"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["config", "inferred", "fallback"],
+          "description": "How this was detected"
+        },
+        "config_file": {
+          "type": ["string", "null"],
+          "description": "Config file used for detection",
+          "examples": [".editorconfig", ".prettierrc", "pyproject.toml"]
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Code sample demonstrating the pattern"
+        }
+      }
+    },
+    "style": {
+      "type": "object",
+      "properties": {
+        "naming": {
+          "type": "object",
+          "properties": {
+            "functions": {
+              "type": "string",
+              "enum": ["snake_case", "camelCase", "PascalCase"],
+              "description": "Function naming convention"
+            },
+            "classes": {
+              "type": "string",
+              "enum": ["PascalCase", "snake_case"],
+              "description": "Class naming convention"
+            },
+            "constants": {
+              "type": "string",
+              "enum": ["SCREAMING_SNAKE_CASE", "PascalCase", "camelCase"],
+              "description": "Constant naming convention"
+            },
+            "files": {
+              "type": "string",
+              "enum": ["snake_case", "kebab-case", "camelCase", "PascalCase"],
+              "description": "File naming convention"
+            }
+          }
+        },
+        "error_handling": {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Error handling pattern used",
+              "examples": ["try/except", "Result type", "if err != nil", "throw/catch"]
+            },
+            "evidence": {
+              "type": "string",
+              "description": "Code sample demonstrating the pattern"
+            }
+          }
+        },
+        "imports": {
+          "type": "object",
+          "properties": {
+            "style": {
+              "type": "string",
+              "enum": ["absolute", "relative", "mixed"],
+              "description": "Import path style"
+            },
+            "grouping": {
+              "type": "string",
+              "description": "How imports are grouped",
+              "examples": ["stdlib, third-party, local", "ungrouped", "by type"]
+            },
+            "evidence": {
+              "type": "string",
+              "description": "Code sample demonstrating the pattern"
+            }
+          }
+        },
+        "source": {
+          "type": "string",
+          "enum": ["config", "inferred", "fallback"]
+        }
+      }
+    },
+    "testing": {
+      "type": "object",
+      "properties": {
+        "framework": {
+          "type": "string",
+          "description": "Testing framework in use",
+          "examples": ["pytest", "jest", "vitest", "go test", "junit", "rspec"]
+        },
+        "location": {
+          "type": "string",
+          "description": "Where tests are located",
+          "examples": ["tests/", "__tests__/", "src/**/*.test.ts", "*_test.go"]
+        },
+        "naming": {
+          "type": "string",
+          "description": "Test naming convention",
+          "examples": ["test_{module}_{behavior}", "describe/it blocks", "Test{Function}"]
+        },
+        "fixtures": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "Where fixtures/mocks are defined"
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Fixture pattern used"
+            }
+          }
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Sample test code"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["config", "inferred", "fallback"]
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "library": {
+          "type": "string",
+          "description": "Logging library in use",
+          "examples": ["logging", "structlog", "winston", "pino", "zap", "slog"]
+        },
+        "style": {
+          "type": "string",
+          "enum": ["structured", "formatted", "printf"],
+          "description": "Logging style"
+        },
+        "levels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Log levels in use"
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Sample log statement"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["config", "inferred", "fallback"]
+        }
+      }
+    },
+    "api": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": ["REST", "GraphQL", "gRPC", "tRPC", "none"],
+          "description": "API style"
+        },
+        "routes": {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Route definition pattern"
+            },
+            "naming": {
+              "type": "string",
+              "description": "URL naming convention",
+              "examples": ["/api/v1/resources", "/resources", "kebab-case"]
+            }
+          }
+        },
+        "response": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "string",
+              "description": "Success response shape"
+            },
+            "error": {
+              "type": "string",
+              "description": "Error response shape"
+            }
+          }
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Sample route/endpoint code"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["config", "inferred", "fallback"]
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "auth_pattern": {
+          "type": "string",
+          "description": "Authentication pattern used",
+          "examples": ["JWT middleware", "session-based", "API key", "OAuth"]
+        },
+        "validation": {
+          "type": "string",
+          "description": "Input validation approach",
+          "examples": ["pydantic", "zod", "joi", "manual"]
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Sample auth/validation code"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["config", "inferred", "fallback"]
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "description": "Configuration loading pattern",
+          "examples": ["env vars", "config file", "12-factor"]
+        },
+        "env_file": {
+          "type": ["string", "null"],
+          "description": "Environment file if exists"
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Sample config loading code"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["config", "inferred", "fallback"]
+        }
+      }
+    }
+  }
+}

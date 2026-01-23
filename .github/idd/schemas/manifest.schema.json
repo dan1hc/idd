@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IDD Change Manifest",
+  "description": "Output from Architect agent describing code changes made",
+  "type": "object",
+  "required": ["feature", "timestamp", "changes"],
+  "properties": {
+    "feature": {
+      "type": "string",
+      "description": "Feature name being implemented"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp of when changes were made"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["partial", "complete"],
+      "description": "Whether implementation is complete"
+    },
+    "changes": {
+      "type": "array",
+      "description": "List of files changed",
+      "items": {
+        "type": "object",
+        "required": ["file", "action"],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Relative file path"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["created", "modified", "deleted"],
+            "description": "What was done to the file"
+          },
+          "symbols": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Functions, classes, or methods added/modified"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this file does"
+          }
+        }
+      }
+    },
+    "markers": {
+      "type": "array",
+      "description": "IDD markers added to code",
+      "items": {
+        "type": "object",
+        "required": ["anchor", "file"],
+        "properties": {
+          "anchor": {
+            "type": "string",
+            "description": "The marker ID (e.g., 'user-auth:validate')"
+          },
+          "file": {
+            "type": "string",
+            "description": "File containing the marker"
+          },
+          "line": {
+            "type": "integer",
+            "description": "Line number (approximate, for reference)"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this marker identifies"
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "New dependencies added",
+      "properties": {
+        "added": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Packages added"
+        },
+        "install_command": {
+          "type": "string",
+          "description": "Command to install new dependencies"
+        }
+      }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "description": "Status of acceptance criteria",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "status"],
+        "properties": {
+          "criterion": {
+            "type": "string",
+            "description": "The acceptance criterion text"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["done", "partial", "blocked", "skipped"],
+            "description": "Completion status"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Any notes about this criterion"
+          }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Recommended next actions if incomplete"
+    }
+  }
+}

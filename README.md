@@ -12,11 +12,11 @@ AI coding assistants are powerful but amnesiac. Every session starts fresh:
 
 ## The Solution
 
-IDD introduces a simple workflow:
+IDD introduces a sub-agent workflow:
 
 1. **You write a feature spec** — plain markdown describing what you want
-2. **Compile** — merges your spec with pattern detection + best-practice fallbacks
-3. **AI implements** — matching detected conventions, or sensible defaults for greenfield
+2. **Compile** — merges your spec with the orchestrator and specialized agents
+3. **AI implements** — Detective → Architect → Scribe pipeline
 4. **Glossary updated** — semantic anchors track what was built where
 
 The glossary is the key. It creates persistent memory across AI sessions, so the AI can maintain and enhance existing code—not just create new code blindly.
@@ -25,9 +25,9 @@ The glossary is the key. It creates persistent memory across AI sessions, so the
 
 | Without IDD | With IDD |
 |-------------|----------|
-| AI guesses your conventions | AI detects and matches your patterns |
+| AI guesses your conventions | Detective agent detects and documents patterns |
 | No record of AI-generated code | Glossary maps features → code |
-| Each session starts from zero | Glossaries carry context forward |
+| Each session starts from zero | Conventions + glossaries carry context forward |
 | "Where did this code come from?" | `grep IDD:feature-name` finds it |
 | Refactoring breaks references | Semantic anchors survive refactoring |
 
@@ -63,7 +63,12 @@ Every AI session follows this pattern:
 
 ### Copy-Paste Commands
 
-**Compile (new feature):**
+**Compile (cross-feature context, default):**
+```bash
+.github/idd/compile.sh
+```
+
+**Compile (specific feature):**
 ```bash
 .github/idd/compile.sh <feature-name>
 ```
@@ -73,6 +78,15 @@ Every AI session follows this pattern:
 .github/idd/compile.sh --bootstrap
 ```
 
+**Individual agent modes:**
+```bash
+.github/idd/compile.sh --detective    # Run only pattern detection
+.github/idd/compile.sh --architect    # Run only code implementation
+.github/idd/compile.sh --scribe       # Run only glossary update
+.github/idd/compile.sh --status       # Show current state
+.github/idd/compile.sh --reset        # Clear state and start fresh
+```
+
 **Prompt (paste this into your AI chat after selecting agent.md):**
 ```
 Implement the feature in agent.md
@@ -80,7 +94,7 @@ Implement the feature in agent.md
 
 ### Why Re-Compile?
 
-The AI updates `layers.md` (with detected patterns) and your feature file (with glossary entries). These changes only appear in `agent.md` after you re-compile. 
+The AI updates `conventions.json` (detected patterns) and your feature file (glossary entries). These changes only appear in `agent.md` after you re-compile. 
 
 **Always re-compile before each AI session.**
 
@@ -125,7 +139,12 @@ Users can log in with email and password to receive a JWT token.
 .github/idd/compile.sh user-auth
 ```
 
-**What happens:** AI reads the compiled instructions, detects your codebase patterns (formatting, testing, logging conventions), implements the feature matching your style, then updates the glossary with semantic anchors. Re-compile and repeat until complete.
+**What happens:** The orchestrator coordinates three specialized agents:
+1. **Detective** analyzes your codebase, detects conventions, outputs `conventions.json`
+2. **Architect** implements the feature matching detected patterns, outputs `manifest.json`
+3. **Scribe** validates code anchors and updates the glossary
+
+Re-compile and repeat until complete.
 
 ### Scenario B: Existing Codebase (bootstrap)
 
@@ -134,58 +153,73 @@ Users can log in with email and password to receive a JWT token.
 .github/idd/compile.sh --bootstrap
 ```
 
-**What happens:** AI analyzes your codebase, identifies logical feature boundaries (auth, billing, etc.), generates feature files with pre-populated glossaries, and optionally adds IDD markers to your code. Re-compile and repeat until complete.
+**What happens:** Detective agent analyzes your codebase, identifies logical feature boundaries (auth, billing, etc.), generates feature files with pre-populated glossaries, and captures conventions for future features. Re-compile and repeat until complete.
 
 After bootstrapping, use Scenario A for new features.
 
+### Scenario C: Cross-Feature Work (default)
+
+```bash
+# Compile with cross-feature context
+.github/idd/compile.sh
+```
+
+**What happens:** Compiles using `general.md`, which provides full codebase context without scoping to a single feature. Use this for:
+- Changes spanning multiple features
+- Refactoring shared code
+- Bug fixes without a dedicated feature file
+- Exploratory work
+
+The agent will check existing glossaries and update affected feature files as needed.
+
 ## How It Works
 
-### The Compile Step
-
-`compile.sh` concatenates three things into `.github/agents/agent.md`:
+### The Sub-Agent Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│  layers.md                              │  ← Pattern detection + fallbacks
-│  - Detect: check .editorconfig, etc.    │
-│  - Match: use whatever is found         │
-│  - Fallback: sensible defaults if not   │
-├─────────────────────────────────────────┤
-│  your-feature.md                        │  ← Your requirements
-│  - What you want                        │
-│  - Acceptance criteria                  │
-├─────────────────────────────────────────┤
-│  post-implement.md                      │  ← Glossary instructions
-│  - Add IDD markers to code              │
-│  - Update glossary with anchors         │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        ORCHESTRATOR                             │
+│               (coordinates the pipeline)                        │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+          ┌───────────────┼───────────────┐
+          ▼               ▼               ▼
+    ┌──────────┐    ┌──────────┐    ┌──────────┐
+    │ DETECTIVE│───►│ ARCHITECT│───►│  SCRIBE  │
+    │          │    │          │    │          │
+    │ Analyzes │    │ Implements│   │ Validates│
+    │ patterns │    │ features  │   │ glossary │
+    └──────────┘    └──────────┘    └──────────┘
+          │               │               │
+          ▼               ▼               ▼
+    conventions.json  manifest.json  feature.md
 ```
 
-The AI receives this compiled document as its instruction set.
+### Detective Agent
 
-### Pattern Detection with Fallbacks
+Runs bash commands to detect your codebase conventions:
+- Language, framework, project structure
+- Formatting (editorconfig, prettier, black, etc.)
+- Code style (max line length, imports, naming)
+- Testing (pytest, jest, framework location)
+- Logging, API design, security patterns
 
-`layers.md` tells AI to detect existing patterns first, then fall back to language-agnostic best practices:
+Outputs `conventions.json` conforming to a JSON schema.
 
-```markdown
-## Testing
+### Architect Agent
 
-**Detect from:** pytest.ini, jest.config.*, *_test.go, existing test files
+Implements features following detected conventions:
+- Reads conventions.json for patterns to match
+- Adds IDD markers to generated code
+- Creates manifest.json tracking all changes
+- Handles partial implementations gracefully
 
-**Match:** test location, naming convention, fixture patterns, assertion style
+### Scribe Agent
 
-**Fallback:**
-- tests/ directory mirroring src/
-- test_<thing>_<behavior> naming  
-- Arrange-Act-Assert pattern
-- Mock at boundaries only
-```
-
-**Existing codebase?** AI finds your `pytest.ini`, sees you use `conftest.py` fixtures, matches that.
-
-**Greenfield project?** No config found → AI uses the fallback principles.
-
-This applies to formatting, style, logging, API design, security patterns—every layer.
+Validates and updates glossaries:
+- Verifies code anchors actually exist
+- Updates feature file glossary tables
+- Cleans up temporary manifest.json
 
 ### Glossary Anchors
 
@@ -203,7 +237,7 @@ Glossaries use semantic anchors that survive refactoring:
 
 ### IDD Markers
 
-AI adds markers to code for fine-grained tracing:
+Architect agent adds markers to code for fine-grained tracing:
 
 ```python
 # IDD:user-auth:validate
@@ -218,21 +252,29 @@ Now `grep "IDD:user-auth"` finds all code for that feature across your codebase.
 
 ```
 .github/idd/
-├── compile.sh         # Merges files → agent.md
-├── layers.md          # Pattern detection instructions
-├── bootstrap.md       # Bootstrap existing codebases  
-├── post-implement.md  # Glossary update instructions
+├── compile.sh              # Orchestrates compilation
+├── orchestrator.md         # Main workflow coordinator
+├── conventions.json        # Detected patterns (auto-generated)
+├── state.json              # Session state (auto-generated)
+├── agents/
+│   ├── detective.md        # Pattern detection specialist
+│   ├── architect.md        # Code implementation specialist
+│   └── scribe.md           # Glossary validation specialist
+├── schemas/
+│   ├── conventions.schema.json   # Detective output schema
+│   └── manifest.schema.json      # Architect output schema
 └── features/
-    └── _template.md   # Copy for new features
+    ├── general.md          # Default cross-feature context
+    └── _template.md        # Copy for new features
 ```
 
-**5 files. ~400 lines. That's the whole framework.**
+**~10 files. Specialized agents with JSON schema contracts.**
 
 ## FAQ
 
 **Why not just prompt the AI directly?**
 
-You can. IDD just systematizes it. The compile step ensures AI always gets pattern detection + glossary instructions. The glossary ensures you don't lose track of what was built.
+You can. IDD systematizes it. The sub-agent architecture ensures consistent pattern detection, implementation, and documentation. The glossary ensures you don't lose track of what was built.
 
 **Does this work with [Copilot/Claude/GPT/etc]?**
 
@@ -240,11 +282,11 @@ Yes. The compiled `agent.md` is just markdown instructions. Any AI that can read
 
 **What if AI doesn't follow the instructions?**
 
-The pattern detection in `layers.md` includes specific grep commands and "evidence required" prompts to force the AI to actually look at your codebase before implementing. But AI compliance varies—review the output.
+The Detective agent includes specific bash commands that force the AI to actually examine your codebase. Conventions are captured in JSON with schema validation. But AI compliance varies—review the output.
 
 **Is this language-specific?**
 
-No. `layers.md` contains detection patterns for common configs (pytest, jest, eslint, black, etc.) but the fallbacks are language-agnostic principles like "test behavior not implementation" and "early returns over nested conditionals." Works for any language.
+No. The Detective agent detects patterns for common configs (pytest, jest, eslint, black, etc.) but the Architect agent fallbacks are language-agnostic principles. Works for any language.
 
 ## License
 

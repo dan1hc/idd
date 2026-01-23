@@ -656,7 +656,7 @@
 
   <div class="hero">
     <h1>Quickstart Guide</h1>
-    <p>Get IDD running in your project in under 5 minutes. Write specs, let AI implement, keep a glossary of what was built.</p>
+    <p>Get IDD running in your project in under 5 minutes. Write specs, let specialized AI agents implement, keep a glossary of what was built.</p>
     <div class="hero-cta">
       <a href="#get-started" class="btn btn-primary">
         Get Started
@@ -817,12 +817,12 @@ A clear description of what this feature does.
           <div class="step-number"><span>3</span></div>
           <div class="step-title">
             <h3>Compile Your Instructions</h3>
-            <p>Merge spec + patterns + glossary rules into agent.md</p>
+            <p>Merge orchestrator + agents + schemas into agent.md</p>
           </div>
           <div class="step-toggle">▼</div>
         </div>
         <div class="step-content">
-          <p>The compile step creates a single instruction file for your AI assistant by merging pattern detection, your feature spec, and glossary update rules.</p>
+          <p>The compile step creates a single instruction file for your AI assistant by merging the orchestrator, specialized agents, and your feature spec.</p>
           
           <div class="code-block">
             <div class="code-header">
@@ -838,9 +838,12 @@ A clear description of what this feature does.
 
           <div class="file-tree">
             <div class="file-tree-item">📄 agent.md</div>
-            <div class="file-tree-item" style="padding-left: 1rem;">├─ layers.md <span style="color: var(--text-muted)">← Pattern detection + fallbacks</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">├─ orchestrator.md <span style="color: var(--text-muted)">← Workflow coordinator</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">├─ detective.md <span style="color: var(--text-muted)">← Pattern detection agent</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">├─ architect.md <span style="color: var(--text-muted)">← Implementation agent</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">├─ scribe.md <span style="color: var(--text-muted)">← Glossary validation agent</span></div>
             <div class="file-tree-item" style="padding-left: 1rem;">├─ my-feature.md <span style="color: var(--text-muted)">← Your requirements</span></div>
-            <div class="file-tree-item" style="padding-left: 1rem;">└─ post-implement.md <span style="color: var(--text-muted)">← Glossary instructions</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">└─ schemas/*.json <span style="color: var(--text-muted)">← Output contracts</span></div>
           </div>
         </div>
       </div>
@@ -947,16 +950,21 @@ A clear description of what this feature does.
           <div class="file-tree">
             <div class="file-tree-item folder">📁 .github/idd/</div>
             <div class="file-tree-item file" style="padding-left: 1rem;">├─ compile.sh</div>
-            <div class="file-tree-item file" style="padding-left: 1rem;">├─ layers.md</div>
-            <div class="file-tree-item file" style="padding-left: 1rem;">├─ bootstrap.md</div>
-            <div class="file-tree-item file" style="padding-left: 1rem;">├─ post-implement.md</div>
+            <div class="file-tree-item file" style="padding-left: 1rem;">├─ orchestrator.md</div>
+            <div class="file-tree-item folder" style="padding-left: 1rem;">├─ 📁 agents/</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">├─ detective.md</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">├─ architect.md</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">└─ scribe.md</div>
+            <div class="file-tree-item folder" style="padding-left: 1rem;">├─ 📁 schemas/</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">├─ conventions.schema.json</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">└─ manifest.schema.json</div>
             <div class="file-tree-item folder" style="padding-left: 1rem;">└─ 📁 features/</div>
             <div class="file-tree-item file" style="padding-left: 2rem;">└─ _template.md</div>
           </div>
 
           <div class="info-box tip">
             <span class="info-box-icon">💡</span>
-            <p><strong>5 files. ~400 lines.</strong> That's the whole framework.</p>
+            <p><strong>~10 files. Specialized agents with JSON schema contracts.</strong></p>
           </div>
         </div>
       </div>
@@ -971,7 +979,7 @@ A clear description of what this feature does.
           <div class="step-toggle">▼</div>
         </div>
         <div class="step-content">
-          <p>The bootstrap process analyzes your codebase, identifies logical feature boundaries, and generates feature files with pre-populated glossaries.</p>
+          <p>The bootstrap process uses the Detective agent to analyze your codebase, identify logical feature boundaries, and generate feature files with pre-populated glossaries.</p>
           
           <div class="code-block">
             <div class="code-header">
@@ -987,7 +995,7 @@ A clear description of what this feature does.
 
           <div class="info-box info">
             <span class="info-box-icon">ℹ️</span>
-            <p><strong>What happens:</strong> AI creates feature files like <code class="inline-code">auth.md</code>, <code class="inline-code">billing.md</code> based on your code structure, with glossaries already populated.</p>
+            <p><strong>What happens:</strong> Detective agent analyzes patterns, then creates feature files like <code class="inline-code">auth.md</code>, <code class="inline-code">billing.md</code> based on your code structure, with glossaries already populated.</p>
           </div>
         </div>
       </div>
@@ -1106,7 +1114,7 @@ A clear description of what this feature does.
 
           <div class="info-box tip">
             <span class="info-box-icon">💡</span>
-            <p>The AI now has context from your bootstrapped glossaries, so it will match your existing patterns and conventions.</p>
+            <p>The Detective agent now has context from <code class="inline-code">conventions.json</code>, so the Architect will match your existing patterns and conventions.</p>
           </div>
         </div>
       </div>
@@ -1126,7 +1134,7 @@ A clear description of what this feature does.
         <tbody>
           <tr>
             <td>AI guesses your conventions</td>
-            <td>AI detects and matches your patterns</td>
+            <td>Detective agent detects and documents patterns</td>
           </tr>
           <tr>
             <td>No record of AI-generated code</td>
@@ -1134,7 +1142,7 @@ A clear description of what this feature does.
           </tr>
           <tr>
             <td>Each session starts from zero</td>
-            <td>Glossaries carry context forward</td>
+            <td>Conventions + glossaries carry context forward</td>
           </tr>
           <tr>
             <td>"Where did this code come from?"</td>
