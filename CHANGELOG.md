@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/dan1hc/idd/compare/v1.2.0...v1.2.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* download script + stale readme ([8a457e7](https://github.com/dan1hc/idd/commit/8a457e733d2371cdf808e29fe66db54cd92b41f1))
+
 # [1.2.0](https://github.com/dan1hc/idd/compare/v1.1.1...v1.2.0) (2026-02-05)
 
 
