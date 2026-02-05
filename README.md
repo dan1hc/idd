@@ -130,7 +130,7 @@ Implement the feature in agent.md
 
 The AI updates `conventions.json` (detected patterns) and your feature file (glossary entries). These changes only appear in `agent.md` after you re-compile. 
 
-**Always re-compile before each AI session.**
+**Always re-compile before each AI session.** When re-compiling the same feature, IDD is phase-aware — it includes only the active agent (e.g. Architect or Scribe) instead of all agents, keeping context focused.
 
 ---
 
@@ -336,9 +336,10 @@ Now `grep "IDD:user-auth"` finds all code for that feature across your codebase.
 .github/idd/
 ├── compile.sh              # CLI orchestrator
 ├── orchestrator.md         # Main workflow coordinator
+├── hooks.config            # Git hooks configuration
 ├── conventions.json        # Detected patterns (auto-generated)
 ├── state.json              # Session state (auto-generated)
-├── hooks.config            # Git hooks configuration
+├── manifest.json           # Change manifest (transient, auto-generated)
 ├── agents/
 │   ├── detective.md        # Pattern detection + library analysis
 │   ├── architect.md        # Code implementation specialist

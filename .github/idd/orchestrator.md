@@ -445,24 +445,36 @@ What would you like to do?
 
 ```
 .github/idd/
-├── state.json              # Session state (managed by Orchestrator)
-├── conventions.json        # Detected patterns (output of Detective)
-├── manifest.json           # Change manifest (output of Architect, transient)
+├── compile.sh              # CLI orchestrator
+├── orchestrator.md         # This file - workflow coordinator
+├── hooks.config            # Git hooks configuration
+├── conventions.json        # Detected patterns (auto-generated)
+├── state.json              # Session state (auto-generated)
+├── manifest.json           # Change manifest (transient, auto-generated)
 ├── agents/
-│   ├── detective.md        # Pattern detection agent
-│   ├── architect.md        # Code implementation agent
-│   ├── scribe.md           # Glossary management agent
-│   └── patterns.md         # Pattern learning agent (NEW)
+│   ├── detective.md        # Pattern detection + library analysis
+│   ├── architect.md        # Code implementation specialist
+│   ├── scribe.md           # Glossary validation specialist
+│   └── patterns.md         # Pattern learning + confirmation
+├── hooks/
+│   ├── pre-commit          # Git pre-commit hook
+│   ├── glossary-check      # Anchor validation wrapper
+│   ├── glossary_check.py   # Anchor validation logic
+│   ├── pattern-check       # Pattern compliance wrapper
+│   ├── pattern_check.py    # Pattern compliance logic
+│   └── validate_json.py    # JSON schema validation
 ├── patterns/
 │   ├── learned.json        # User-confirmed patterns (persistent)
-│   └── overrides.json      # User-specified convention overrides
+│   ├── overrides.json      # User-specified convention overrides
+│   └── templates.json      # Pre-built pattern templates
 ├── schemas/
 │   ├── conventions.schema.json
 │   ├── manifest.schema.json
-│   ├── learned.schema.json     # Schema for learned patterns
-│   └── overrides.schema.json   # Schema for overrides
+│   ├── learned.schema.json
+│   └── overrides.schema.json
 └── features/
     ├── _template.md
+    ├── general.md          # Cross-feature context
     └── {feature}.md        # Feature specs with glossaries
 ```
 

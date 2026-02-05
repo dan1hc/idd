@@ -23,10 +23,11 @@
 set -e
 
 # IDD Version - used for compatibility checking
-IDD_VERSION="1.1.0"
+IDD_VERSION="1.3.0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IDD_DIR="$SCRIPT_DIR"
+# agent.md lives at .github/agents/agent.md (outside idd/) for easy discovery in AI chat
 AGENTS_DIR="$(dirname "$SCRIPT_DIR")/agents"
 OUTPUT_FILE="$AGENTS_DIR/agent.md"
 STATE_FILE="$IDD_DIR/state.json"
@@ -816,9 +817,13 @@ if [[ "$1" == "--learn" ]]; then
         echo ""
         echo "---"
         echo ""
-        echo "# Sub-Agent: Detective (for pattern discovery)"
+        echo "# Sub-Agent: Detective (discovery commands reference)"
         echo ""
-        cat "$IDD_DIR/agents/detective.md"
+        echo "Use the following commands to discover patterns in the codebase."
+        echo "For full Detective output format, run \`compile.sh --detective\` separately."
+        echo ""
+        # Include only the discovery sections (Steps 1-11), not output format/rules/templates
+        sed -n '1,/^## Output Format/p' "$IDD_DIR/agents/detective.md" | head -n -1
         echo ""
         echo "---"
         echo ""
@@ -1254,7 +1259,7 @@ if [[ "$1" == "--bootstrap" ]]; then
         echo "Ask the user to confirm each pattern before saving to patterns/learned.json."
     } > "$OUTPUT_FILE"
     # Initialize state
-    echo '{"mode":"bootstrap","phase":"detective","started_at":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","auto_learn":true}' > "$STATE_FILE"
+    echo '{"mode":"bootstrap","phase":"detective","started_at":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","auto_learn":true,"idd_version":"'$IDD_VERSION'"}' > "$STATE_FILE"
     echo -e "${GREEN}✓${NC} Compiled: $OUTPUT_FILE"
     echo -e "${GREEN}✓${NC} State initialized: $STATE_FILE"
     echo ""
@@ -1298,6 +1303,18 @@ echo ""
 # Auto-verify if there are uncommitted changes
 run_auto_verify
 
+# Check if we're resuming the same feature at a known phase
+RESUME_PHASE=""
+if [[ -f "$STATE_FILE" ]]; then
+    PREV_FEATURE=$(python3 -c "import json; print(json.load(open('$STATE_FILE')).get('feature', ''))" 2>/dev/null)
+    PREV_PHASE=$(python3 -c "import json; print(json.load(open('$STATE_FILE')).get('phase', ''))" 2>/dev/null)
+    if [[ "$PREV_FEATURE" == "$FEATURE" && -n "$PREV_PHASE" && "$PREV_PHASE" != "detective" ]]; then
+        RESUME_PHASE="$PREV_PHASE"
+        echo -e "${CYAN}ℹ${NC}  Resuming at phase: $RESUME_PHASE (use --reset to start over)"
+        echo ""
+    fi
+fi
+
 # Build the orchestrated agent.md
 {
     echo "# IDD Agent: Feature Implementation"
@@ -1310,31 +1327,90 @@ run_auto_verify
     echo ""
     echo "---"
     echo ""
-    echo "# Sub-Agent: Detective"
-    echo ""
-    cat "$IDD_DIR/agents/detective.md"
-    echo ""
-    echo "---"
-    echo ""
-    echo "# Sub-Agent: Architect"
-    echo ""
-    cat "$IDD_DIR/agents/architect.md"
-    echo ""
-    echo "---"
-    echo ""
-    echo "# Sub-Agent: Scribe"
-    echo ""
-    cat "$IDD_DIR/agents/scribe.md"
-    echo ""
-    echo "---"
-    echo ""
+    
+    # Include learned patterns FIRST (they take precedence over conventions)
+    if [[ -f "$LEARNED_FILE" ]]; then
+        PATTERN_COUNT=$(count_learned_patterns)
+        if [[ "$PATTERN_COUNT" -gt 0 ]]; then
+            echo "# Learned Patterns (HIGHEST PRIORITY - must follow)"
+            echo ""
+            echo '```json'
+            cat "$LEARNED_FILE"
+            echo '```'
+            echo ""
+            echo "---"
+            echo ""
+        fi
+    fi
+    
+    # Phase-aware agent inclusion: if resuming, include only the active agent
+    if [[ "$RESUME_PHASE" == "architect" ]]; then
+        echo "# Sub-Agent: Architect (active phase)"
+        echo ""
+        cat "$IDD_DIR/agents/architect.md"
+        echo ""
+        echo "---"
+        echo ""
+        if [[ -f "$CONVENTIONS_FILE" ]]; then
+            echo "# Detected Conventions"
+            echo ""
+            echo '```json'
+            cat "$CONVENTIONS_FILE"
+            echo '```'
+            echo ""
+            echo "---"
+            echo ""
+        fi
+    elif [[ "$RESUME_PHASE" == "scribe" ]]; then
+        echo "# Sub-Agent: Scribe (active phase)"
+        echo ""
+        cat "$IDD_DIR/agents/scribe.md"
+        echo ""
+        echo "---"
+        echo ""
+        if [[ -f "$MANIFEST_FILE" ]]; then
+            echo "# Manifest from Architect"
+            echo ""
+            echo '```json'
+            cat "$MANIFEST_FILE"
+            echo '```'
+            echo ""
+            echo "---"
+            echo ""
+        fi
+    else
+        # Fresh start: include all agents for full pipeline
+        echo "# Sub-Agent: Detective"
+        echo ""
+        cat "$IDD_DIR/agents/detective.md"
+        echo ""
+        echo "---"
+        echo ""
+        echo "# Sub-Agent: Architect"
+        echo ""
+        cat "$IDD_DIR/agents/architect.md"
+        echo ""
+        echo "---"
+        echo ""
+        echo "# Sub-Agent: Scribe"
+        echo ""
+        cat "$IDD_DIR/agents/scribe.md"
+        echo ""
+        echo "---"
+        echo ""
+    fi
+    
     echo "# Feature to Implement"
     echo ""
     cat "$FEATURE_FILE"
 } > "$OUTPUT_FILE"
 
-# Initialize/update state
-echo '{"mode":"feature","feature":"'"$FEATURE"'","phase":"detective","started_at":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > "$STATE_FILE"
+# Initialize/update state (preserve phase if resuming, else start at detective)
+if [[ -n "$RESUME_PHASE" ]]; then
+    echo '{"mode":"feature","feature":"'"$FEATURE"'","phase":"'"$RESUME_PHASE"'","started_at":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","idd_version":"'$IDD_VERSION'"}' > "$STATE_FILE"
+else
+    echo '{"mode":"feature","feature":"'"$FEATURE"'","phase":"detective","started_at":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","idd_version":"'$IDD_VERSION'"}' > "$STATE_FILE"
+fi
 
 echo -e "${GREEN}✓${NC} Compiled: $OUTPUT_FILE"
 echo -e "${GREEN}✓${NC} State initialized: $STATE_FILE"

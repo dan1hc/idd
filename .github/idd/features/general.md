@@ -33,6 +33,6 @@ When working in general mode:
 
 ## Glossary
 
-| What | Where |
-|------|-------|
-| *Cross-feature changes tracked in respective feature files* | |
+| Location | Type | Description |
+|----------|------|-------------|
+| *Cross-feature changes tracked in respective feature files* | | |

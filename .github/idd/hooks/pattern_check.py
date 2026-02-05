@@ -35,16 +35,16 @@ def check_file_against_pattern(file_path, content, pattern):
 
     violation = None
 
-    # Check bad examples
-    if pattern_type == 'library':
-        bad_examples = pattern.get('examples', {}).get('bad', [])
-        for bad in bad_examples:
-            bad_code = bad.get('code', '')
-            if bad_code and len(bad_code) > 10 and bad_code in content:
-                violation = f"Uses anti-pattern from '{pattern_id}'"
+    # Generic check: bad examples apply to ALL pattern types
+    bad_examples = pattern.get('examples', {}).get('bad', [])
+    for bad in bad_examples:
+        bad_code = bad.get('code', '')
+        if bad_code and len(bad_code) > 10 and bad_code in content:
+            violation = f"Uses anti-pattern from '{pattern_id}': {bad.get('label', rule)[:80]}"
+            return violation
 
-    # Check nested exceptions
-    elif pattern_type == 'error-handling':
+    # Type-specific checks
+    if pattern_type == 'error-handling':
         if 'nested' in rule.lower() and 'never' in rule.lower():
             lines = content.split('\n')
             in_except = False

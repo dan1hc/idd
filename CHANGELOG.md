@@ -1,3 +1,21 @@
+# [1.3.0](https://github.com/dan1hc/idd/compare/v1.2.1...v1.3.0) (2026-02-05)
+
+
+### Features
+
+* phase-aware compilation — resumes at active agent instead of including all 4 ([compile.sh](https://github.com/dan1hc/idd/blob/main/.github/idd/compile.sh))
+* learned patterns included in default feature compilation ([compile.sh](https://github.com/dan1hc/idd/blob/main/.github/idd/compile.sh))
+* slimmed detective in --learn mode — only discovery sections, not full output format ([compile.sh](https://github.com/dan1hc/idd/blob/main/.github/idd/compile.sh))
+* generic bad-example checking for all pattern types in pre-commit hook ([pattern_check.py](https://github.com/dan1hc/idd/blob/main/.github/idd/hooks/pattern_check.py))
+* idd_version tracked in all state.json writes ([compile.sh](https://github.com/dan1hc/idd/blob/main/.github/idd/compile.sh))
+
+
+### Bug Fixes
+
+* general.md glossary header aligned with template format ([general.md](https://github.com/dan1hc/idd/blob/main/.github/idd/features/general.md))
+* orchestrator.md file listing updated with all current files ([orchestrator.md](https://github.com/dan1hc/idd/blob/main/.github/idd/orchestrator.md))
+* quickstart.html file tree synced with actual repo structure ([quickstart.html](https://github.com/dan1hc/idd/blob/main/docs/quickstart.html))
+
 ## [1.2.1](https://github.com/dan1hc/idd/compare/v1.2.0...v1.2.1) (2026-02-05)
 
 
