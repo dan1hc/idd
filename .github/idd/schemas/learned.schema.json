@@ -1,0 +1,171 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IDD Learned Patterns",
+  "description": "User-confirmed patterns that persist across sessions and take precedence over auto-detected conventions",
+  "type": "object",
+  "required": ["version", "patterns"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "last_updated": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO timestamp of last pattern update"
+    },
+    "patterns": {
+      "type": "array",
+      "description": "List of learned patterns",
+      "items": {
+        "$ref": "#/definitions/pattern"
+      }
+    }
+  },
+  "definitions": {
+    "pattern": {
+      "type": "object",
+      "required": ["id", "type", "rule", "confirmed_at", "priority"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
+          "description": "Unique identifier for the pattern (kebab-case)",
+          "examples": ["use-pydantic-models", "no-nested-exceptions", "prefer-structlog"]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "library",
+            "style",
+            "error-handling",
+            "testing",
+            "security",
+            "architecture",
+            "naming",
+            "documentation",
+            "api",
+            "custom"
+          ],
+          "description": "Category of the pattern"
+        },
+        "rule": {
+          "type": "string",
+          "description": "Clear, actionable description of what to do or not do",
+          "examples": [
+            "All data models MUST be Pydantic BaseModel subclasses",
+            "NEVER raise an exception from within an except block without chaining",
+            "All API responses MUST use the ResponseEnvelope wrapper"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this pattern exists - helps AI understand context",
+          "examples": [
+            "Pydantic provides runtime validation and automatic OpenAPI schema generation",
+            "Nested exceptions lose the original traceback and make debugging difficult"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["global", "directory", "file-pattern"],
+          "default": "global",
+          "description": "Where this pattern applies"
+        },
+        "scope_filter": {
+          "type": "string",
+          "description": "Glob pattern when scope is 'directory' or 'file-pattern'",
+          "examples": ["src/api/**", "**/*_model.py", "tests/**"]
+        },
+        "examples": {
+          "type": "object",
+          "properties": {
+            "good": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "Example code that follows the pattern"
+                  },
+                  "explanation": {
+                    "type": "string",
+                    "description": "Why this is correct"
+                  }
+                }
+              }
+            },
+            "bad": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "Example code that violates the pattern"
+                  },
+                  "explanation": {
+                    "type": "string",
+                    "description": "Why this is wrong"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "confirmed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user confirmed this pattern"
+        },
+        "confirmed_by": {
+          "type": "string",
+          "enum": ["user", "detected", "template"],
+          "description": "How this pattern was added"
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 50,
+          "description": "Priority for conflict resolution (higher = more important)"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this pattern is currently active"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional tags for filtering/grouping",
+          "examples": [["python", "pydantic"], ["error-handling", "debugging"]]
+        },
+        "related_patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs of related patterns"
+        },
+        "conflicts_with": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs of patterns this one is known to conflict with (for validation)"
+        },
+        "coexistence_note": {
+          "type": "string",
+          "description": "If this pattern coexists with a potentially conflicting pattern, explain how"
+        }
+      }
+    }
+  }
+}

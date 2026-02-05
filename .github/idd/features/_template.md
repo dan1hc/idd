@@ -1,6 +1,6 @@
 # Feature: <!-- name -->
 
-> **Status**: `draft`
+> **Status**: `draft` | `in-progress` | `partial` | `complete`
 
 ## What
 
@@ -25,6 +25,55 @@
 ### Out of Scope
 
 - <!-- e.g., "Admin UI for managing X" -->
+
+---
+
+## Dependencies
+
+<!-- What other features, services, or components does this depend on? -->
+
+### Feature Dependencies
+
+- <!-- e.g., "Requires user-auth feature to be complete" -->
+
+### External Dependencies
+
+- <!-- e.g., "Requires Redis for caching" -->
+- <!-- e.g., "Needs Stripe API credentials" -->
+
+---
+
+## Technical Considerations
+
+<!-- Optional: performance, security, backward compatibility requirements -->
+
+### Performance
+
+- <!-- e.g., "Must handle 1000 requests/second" -->
+- <!-- e.g., "Response time < 200ms p99" -->
+
+### Security
+
+- <!-- e.g., "Must validate all user input" -->
+- <!-- e.g., "Requires authentication for all endpoints" -->
+- <!-- e.g., "Must not log PII" -->
+
+### Backward Compatibility
+
+- <!-- e.g., "Must maintain v1 API contract" -->
+- <!-- e.g., "Database migrations must be reversible" -->
+
+---
+
+## API Contract (if applicable)
+
+<!-- Define endpoints, request/response shapes for API features -->
+
+```
+POST /api/v1/resource
+Request:  { "field": "value" }
+Response: { "data": {...}, "error": null }
+```
 
 ---
 

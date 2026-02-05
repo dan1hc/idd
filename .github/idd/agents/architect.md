@@ -22,13 +22,38 @@ Before implementing, you must have:
 
 1. **Feature spec** — `.github/idd/features/{feature}.md`
 2. **Conventions** — `.github/idd/conventions.json`
-3. **Existing glossaries** — Other feature files (for context on existing code)
+3. **Learned patterns** — `.github/idd/patterns/learned.json` (if exists)
+4. **Existing glossaries** — Other feature files (for context on existing code)
 
 If `conventions.json` doesn't exist, STOP and request Detective to run first.
 
 ---
 
 ## Process
+
+### Step 0: Load Learned Patterns (FIRST)
+
+Before reading conventions, check for learned patterns:
+
+```bash
+cat .github/idd/patterns/learned.json 2>/dev/null
+```
+
+**Learned patterns are NON-NEGOTIABLE.** They override detected conventions because they represent explicit user requirements.
+
+Example learned pattern:
+```json
+{
+  "id": "use-pydantic-models",
+  "type": "library",
+  "rule": "All data models MUST be Pydantic BaseModel subclasses",
+  "priority": 80
+}
+```
+
+This means: Even if you would normally use a dataclass, you MUST use Pydantic.
+
+---
 
 ### Step 1: Read Conventions
 
@@ -55,36 +80,87 @@ From the feature file, extract:
 
 ---
 
-### Step 3: Plan Implementation
+### Step 3: Check for Existing Components (CRITICAL)
+
+**BEFORE planning any new files, search for existing components to reuse.**
+
+Check `conventions.json` for `centralized_components` section, then verify:
+
+```bash
+# Check for existing models that might be reusable
+grep -rh "class.*BaseModel\|class.*Model" src/models/ 2>/dev/null | head -20
+
+# Check for existing enums
+grep -rh "class.*Enum" src/enums/ src/*/enums/ 2>/dev/null | head -15
+
+# Check for existing services
+ls src/services/ 2>/dev/null
+grep -rh "class.*Service" src/services/ 2>/dev/null | head -10
+
+# Check for existing clients
+ls src/clients/ 2>/dev/null
+grep -rh "class.*Client" src/clients/ 2>/dev/null | head -10
+
+# Check for existing constants/config
+cat src/constants.py src/config.py 2>/dev/null | head -30
+```
+
+**Ask yourself for each component you plan to create:**
+1. Does this enum already exist somewhere? → Reuse it
+2. Does this model already exist? → Import it or extend it
+3. Does a client for this external service exist? → Use it
+4. Is this constant defined elsewhere? → Import it
+
+**Document what you found:**
+```markdown
+### Existing Components to Reuse
+- `src/models/user.py::User` — Will reuse for user data
+- `src/enums/status.py::OrderStatus` — Already has the statuses we need
+- `src/clients/payment.py::PaymentClient` — Will use instead of raw HTTP
+
+### Components That Don't Exist (must create)
+- `OrderConfirmation` model — No existing model fits this need
+- `send_confirmation_email` — New functionality
+```
+
+---
+
+### Step 4: Plan Implementation
 
 Before writing code, plan:
 
 ```markdown
 ## Implementation Plan
 
-### Files to Create
+### Existing Components to Reuse
+- `src/models/user.py::User` — User model
+- `src/enums/order.py::OrderStatus` — Status enum
+- `src/clients/email.py::EmailClient` — For sending emails
+
+### Files to Create (only what doesn't exist)
 - `src/auth/handler.py` — Main auth logic
-- `src/auth/models.py` — Pydantic models
 - `tests/test_auth.py` — Unit tests
 
 ### Files to Modify
 - `src/main.py` — Add router import
-- `src/api/__init__.py` — Export new endpoints
+- `src/models/__init__.py` — Export new models (if adding to centralized location)
 
 ### Dependencies
 - `pyjwt` — JWT handling
 
 ### Sequence
-1. Create models
-2. Create handler with core logic
-3. Add routes
+1. Import existing models/enums
+2. Create only NEW models in centralized location
+3. Create handler with core logic
 4. Write tests
 5. Wire up in main
 ```
 
+**NEVER create a new enum, model, or client without first confirming no equivalent exists.**
+
 ---
 
-### Step 4: Write Code
+### Step 5: Write Code
 
 Implement following these rules:
 
@@ -258,11 +334,55 @@ After implementing, create `.github/idd/manifest.json`:
 
 ## Rules
 
-1. **Conventions are law** — Never deviate from `conventions.json`
-2. **Add markers** — Every significant code block gets an IDD marker
-3. **Write tests** — If the project has tests, you write tests
-4. **Document changes** — The manifest must be accurate and complete
-5. **Don't update glossaries** — That's Scribe's job; just output the manifest
+1. **Learned patterns are supreme** — Never violate a pattern from `learned.json`
+2. **Conventions are law** — Never deviate from `conventions.json` (unless learned pattern overrides)
+3. **Add markers** — Every significant code block gets an IDD marker
+4. **Reference patterns** — When applying a learned pattern, add a comment: `# IDD:pattern:{pattern-id}`
+5. **Write tests** — If the project has tests, you write tests
+6. **Document changes** — The manifest must be accurate and complete
+7. **Don't update glossaries** — That's Scribe's job; just output the manifest
+
+---
+
+## Pattern Application
+
+When applying a learned pattern, document it:
+
+```python
+# IDD:pattern:use-pydantic-models
+from pydantic import BaseModel
+
+class User(BaseModel):  # Pydantic per learned pattern
+    id: int
+    email: str
+    
+# IDD:pattern:no-nested-exceptions
+try:
+    result = risky_operation()
+except SpecificError as e:
+    # Chaining per learned pattern - preserves traceback
+    raise ApplicationError("Operation failed") from e
+```
+
+In the manifest, track which patterns were applied:
+
+```json
+{
+  "feature": "user-auth",
+  "patterns_applied": [
+    {
+      "pattern_id": "use-pydantic-models",
+      "applied_to": ["src/auth/models.py"],
+      "count": 3
+    },
+    {
+      "pattern_id": "no-nested-exceptions",
+      "applied_to": ["src/auth/handler.py"],
+      "count": 2
+    }
+  ]
+}
+```
 
 ---
 

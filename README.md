@@ -53,27 +53,34 @@ curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash
 Every AI session follows this pattern:
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│  1. COMPILE      .github/idd/compile.sh <feature>        │
-│  2. SELECT       Add .github/agents/agent.md to chat     │
-│  3. PROMPT       "Implement the feature in agent.md"     │
-│  4. REPEAT       Go back to step 1                       │
-└──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│  1. COMPILE      .github/idd/compile.sh [feature]            │
+│  2. SELECT       Add .github/agents/agent.md to chat         │
+│  3. PROMPT       See prompt guide below                      │
+│  4. REPEAT       Go back to step 1                           │
+└──────────────────────────────────────────────────────────────┘
+
+  compile.sh              → AI authors feature specs (general mode)
+  compile.sh <feature>    → AI implements the feature
 ```
+
+**The loop is self-improving:** When Detective finds a consistent pattern not already learned, it proposes it. Confirm to save, reject to skip. Future sessions automatically follow confirmed patterns.
+
+**Verification runs automatically** when you compile with uncommitted changes.
 
 ### Copy-Paste Commands
 
-**Compile (cross-feature context, default):**
+**Author a new feature (AI writes the spec):**
 ```bash
 .github/idd/compile.sh
 ```
 
-**Compile (specific feature):**
+**Implement a feature (AI writes the code):**
 ```bash
 .github/idd/compile.sh <feature-name>
 ```
 
-**Compile (bootstrap existing codebase):**
+**Bootstrap existing codebase (detects features + learns patterns):**
 ```bash
 .github/idd/compile.sh --bootstrap
 ```
@@ -83,11 +90,38 @@ Every AI session follows this pattern:
 .github/idd/compile.sh --detective    # Run only pattern detection
 .github/idd/compile.sh --architect    # Run only code implementation
 .github/idd/compile.sh --scribe       # Run only glossary update
+.github/idd/compile.sh --verify       # Run tests/linters on changes
 .github/idd/compile.sh --status       # Show current state
 .github/idd/compile.sh --reset        # Clear state and start fresh
 ```
 
-**Prompt (paste this into your AI chat after selecting agent.md):**
+**Pattern management:**
+```bash
+.github/idd/compile.sh --learn        # Interactive pattern learning
+.github/idd/compile.sh --patterns     # View all learned patterns
+.github/idd/compile.sh --forget <id>  # Remove a learned pattern
+```
+
+**Session recovery:**
+```bash
+.github/idd/compile.sh --resume       # Continue in new AI session
+.github/idd/compile.sh --validate     # Validate IDD JSON files
+```
+
+**Git hooks:**
+```bash
+.github/idd/compile.sh --hooks install  # Install pre-commit validation
+.github/idd/compile.sh --hooks run      # Run hooks manually
+```
+
+**Prompts (paste into your AI chat after selecting agent.md):**
+
+Authoring mode (no args):
+```
+Write a feature spec for <describe what you want>
+```
+
+Implementation mode (`<feature>`):
 ```
 Implement the feature in agent.md
 ```
@@ -105,72 +139,96 @@ The AI updates `conventions.json` (detected patterns) and your feature file (glo
 ### Scenario A: New Feature (any codebase)
 
 ```bash
-# 1. Create feature file
-cp .github/idd/features/_template.md .github/idd/features/user-auth.md
+# 1. Compile in authoring mode (no arguments)
+.github/idd/compile.sh
 ```
 
-```markdown
-# 2. Write your spec (user-auth.md)
-
-# Feature: User Authentication
-
-> **Status**: `draft`
-
-## What
-
-Users can log in with email and password to receive a JWT token.
-
-## Acceptance Criteria
-
-- [ ] POST /api/login accepts email and password
-- [ ] Valid credentials return JWT token
-- [ ] Invalid credentials return 401
-- [ ] Passwords never logged
-
-## Glossary
-
-| What | Where |
-|------|-------|
-| | |
+```text
+# 2. Select agent.md in your AI chat and prompt:
+Write a feature spec for user authentication with email/password login and JWT tokens
 ```
 
 ```bash
-# 3. Compile → Select agent.md → Prompt → Repeat (see Quick Start)
+# 3. Review the generated feature file, then compile for implementation
 .github/idd/compile.sh user-auth
 ```
 
-**What happens:** The orchestrator coordinates three specialized agents:
-1. **Detective** analyzes your codebase, detects conventions, outputs `conventions.json`
-2. **Architect** implements the feature matching detected patterns, outputs `manifest.json`
-3. **Scribe** validates code anchors and updates the glossary
+```text
+# 4. Select agent.md and prompt:
+Implement the feature in agent.md
+```
 
-Re-compile and repeat until complete.
+**What happens:** AI authors the feature spec in `.github/idd/features/`, you review it, then AI implements it. The orchestrator coordinates Detective → Architect → Scribe. Re-compile and repeat until complete.
 
 ### Scenario B: Existing Codebase (bootstrap)
 
 ```bash
-# 1. Compile → Select agent.md → Prompt → Repeat (see Quick Start)
+# 1. Bootstrap (auto-detects features AND learns patterns)
 .github/idd/compile.sh --bootstrap
 ```
 
-**What happens:** Detective agent analyzes your codebase, identifies logical feature boundaries (auth, billing, etc.), generates feature files with pre-populated glossaries, and captures conventions for future features. Re-compile and repeat until complete.
+```text
+# 2. Select agent.md and prompt:
+Bootstrap this codebase
+```
+
+**What happens:** Detective analyzes your codebase, identifies feature boundaries, generates feature files with pre-populated glossaries, and captures project patterns (like "use Pydantic for models"). Re-compile and repeat until complete.
 
 After bootstrapping, use Scenario A for new features.
 
-### Scenario C: Cross-Feature Work (default)
+### Scenario C: Cross-Feature Work
 
 ```bash
-# Compile with cross-feature context
-.github/idd/compile.sh
+# Compile with cross-feature context (same as no args, but skip authoring)
+.github/idd/compile.sh general
 ```
 
-**What happens:** Compiles using `general.md`, which provides full codebase context without scoping to a single feature. Use this for:
-- Changes spanning multiple features
-- Refactoring shared code
-- Bug fixes without a dedicated feature file
-- Exploratory work
+**What happens:** Uses `general.md` for changes spanning multiple features, refactoring, or bug fixes without a dedicated feature file.
 
-The agent will check existing glossaries and update affected feature files as needed.
+---
+
+## Session Recovery
+
+When your AI chat ends or you need to continue in a new session:
+
+```bash
+# 1. Generate resume context
+.github/idd/compile.sh --resume
+```
+
+```text
+# 2. Select agent.md in new AI chat and prompt:
+Continue from the session context in agent.md
+```
+
+The resume command captures your full state: conventions, learned patterns, feature progress, and current phase.
+
+```bash
+# Check current state anytime
+.github/idd/compile.sh --status
+```
+
+---
+
+## Optional: Git Hooks
+
+Install pre-commit validation for JSON validity, glossary anchors, and pattern compliance:
+
+```bash
+# Install hooks
+.github/idd/compile.sh --hooks install
+
+# Warn-only mode (won't block commits)
+.github/idd/compile.sh --hooks install --warn-only
+
+# Run manually without committing
+.github/idd/compile.sh --hooks run
+
+# Remove hooks
+.github/idd/compile.sh --hooks uninstall
+```
+
+---
 
 ## How It Works
 
@@ -198,6 +256,8 @@ The agent will check existing glossaries and update affected feature files as ne
 ### Detective Agent
 
 Runs bash commands to detect your codebase conventions:
+
+
 - Language, framework, project structure
 - Formatting (editorconfig, prettier, black, etc.)
 - Code style (max line length, imports, naming)
@@ -256,13 +316,24 @@ Now `grep "IDD:user-auth"` finds all code for that feature across your codebase.
 ├── orchestrator.md         # Main workflow coordinator
 ├── conventions.json        # Detected patterns (auto-generated)
 ├── state.json              # Session state (auto-generated)
+├── hooks.config            # Git hooks configuration
 ├── agents/
 │   ├── detective.md        # Pattern detection specialist
 │   ├── architect.md        # Code implementation specialist
-│   └── scribe.md           # Glossary validation specialist
+│   ├── scribe.md           # Glossary validation specialist
+│   └── patterns.md         # Pattern learning specialist
+├── hooks/
+│   ├── pre-commit          # Git pre-commit hook
+│   ├── glossary_check.py   # Anchor validation
+│   └── pattern_check.py    # Pattern compliance
+├── patterns/
+│   ├── learned.json        # User-confirmed patterns
+│   ├── overrides.json      # Convention overrides
+│   └── templates.json      # Pre-built pattern templates
 ├── schemas/
 │   ├── conventions.schema.json   # Detective output schema
-│   └── manifest.schema.json      # Architect output schema
+│   ├── manifest.schema.json      # Architect output schema
+│   └── learned.schema.json       # Learned patterns schema
 └── features/
     ├── general.md          # Default cross-feature context
     └── _template.md        # Copy for new features

@@ -739,75 +739,41 @@
         <div class="step-header">
           <div class="step-number"><span>2</span></div>
           <div class="step-title">
-            <h3>Create Your First Feature Spec</h3>
-            <p>Define what you want to build</p>
+            <h3>Author Your First Feature</h3>
+            <p>Let AI write the spec, you review</p>
           </div>
           <div class="step-toggle">▼</div>
         </div>
         <div class="step-content">
-          <p>Copy the template and write your feature specification in plain markdown.</p>
+          <p>Run compile with no arguments to enter authoring mode, then prompt the AI to write your feature spec.</p>
           
           <div class="code-block">
             <div class="code-header">
               <span class="code-lang">bash</span>
-              <button class="copy-btn" data-copy="cp .github/idd/features/_template.md .github/idd/features/my-feature.md">
+              <button class="copy-btn" data-copy=".github/idd/compile.sh">
                 <span>Copy</span>
               </button>
             </div>
-            <pre><code><span class="token-command">cp</span> <span class="token-path">.github/idd/features/_template.md</span> <span class="token-path">.github/idd/features/my-feature.md</span></code></pre>
+            <pre><code><span class="token-path">.github/idd/compile.sh</span></code></pre>
           </div>
 
-          <p>Edit the file with your requirements:</p>
+          <p>Select <code class="inline-code">agent.md</code> in your AI chat and prompt:</p>
 
           <div class="code-block">
             <div class="code-header">
-              <span class="code-lang">markdown</span>
-              <button class="copy-btn" data-copy="# Feature: My Feature
-
-> **Status**: `draft`
-
-## What
-
-A clear description of what this feature does.
-
-## Acceptance Criteria
-
-- [ ] First requirement
-- [ ] Second requirement
-- [ ] Third requirement
-
-## Glossary
-
-| What | Where |
-|------|-------|
-| | |">
+              <span class="code-lang">prompt</span>
+              <button class="copy-btn" data-copy="Write a feature spec for user authentication with email/password login">
                 <span>Copy</span>
               </button>
             </div>
-            <pre><code><span class="token-keyword"># Feature:</span> <span class="token-string">My Feature</span>
-
-<span class="token-comment">> **Status**: `draft`</span>
-
-<span class="token-keyword">## What</span>
-
-A clear description of what this feature does.
-
-<span class="token-keyword">## Acceptance Criteria</span>
-
-- [ ] First requirement
-- [ ] Second requirement
-- [ ] Third requirement
-
-<span class="token-keyword">## Glossary</span>
-
-| What | Where |
-|------|-------|
-| | |</code></pre>
+            <pre><code>Write a feature spec for user authentication with email/password login</code></pre>
           </div>
+
+          <p>AI creates the feature file in <code class="inline-code">.github/idd/features/</code>. Review it, then proceed to implementation.</p>
 
           <div class="info-box info">
             <span class="info-box-icon">ℹ️</span>
-            <p>The glossary starts empty. AI will populate it with semantic anchors pointing to the code it generates.</p>
+            <p><strong>AI authors, you review.</strong> The feature spec includes acceptance criteria and an empty glossary that AI will populate during implementation.</p>
           </div>
         </div>
       </div>
@@ -842,7 +808,9 @@ A clear description of what this feature does.
             <div class="file-tree-item" style="padding-left: 1rem;">├─ detective.md <span style="color: var(--text-muted)">← Pattern detection agent</span></div>
             <div class="file-tree-item" style="padding-left: 1rem;">├─ architect.md <span style="color: var(--text-muted)">← Implementation agent</span></div>
             <div class="file-tree-item" style="padding-left: 1rem;">├─ scribe.md <span style="color: var(--text-muted)">← Glossary validation agent</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">├─ patterns.md <span style="color: var(--text-muted)">← Pattern learning agent</span></div>
             <div class="file-tree-item" style="padding-left: 1rem;">├─ my-feature.md <span style="color: var(--text-muted)">← Your requirements</span></div>
+            <div class="file-tree-item" style="padding-left: 1rem;">├─ learned.json <span style="color: var(--text-muted)">← Project patterns</span></div>
             <div class="file-tree-item" style="padding-left: 1rem;">└─ schemas/*.json <span style="color: var(--text-muted)">← Output contracts</span></div>
           </div>
         </div>
@@ -865,7 +833,7 @@ A clear description of what this feature does.
               <div class="loop-step active">
                 <div class="loop-step-number">1</div>
                 <h4>COMPILE</h4>
-                <p>compile.sh &lt;feature&gt;</p>
+                <p>compile.sh [feature]</p>
               </div>
               <div class="loop-arrow">→</div>
               <div class="loop-step">
@@ -877,7 +845,7 @@ A clear description of what this feature does.
               <div class="loop-step">
                 <div class="loop-step-number">3</div>
                 <h4>PROMPT</h4>
-                <p>"Implement the feature"</p>
+                <p>See prompts below</p>
               </div>
               <div class="loop-arrow">→</div>
               <div class="loop-step">
@@ -887,11 +855,23 @@ A clear description of what this feature does.
               </div>
             </div>
             <div class="loop-back">
-              <span>↩ Always re-compile before each AI session</span>
+              <span>↩ Verification runs automatically on compile</span>
             </div>
           </div>
 
-          <p>Use this exact prompt after selecting <code class="inline-code">agent.md</code> in your AI chat:</p>
+          <p><strong>Authoring mode</strong> (no args) — AI writes the feature spec:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">prompt</span>
+              <button class="copy-btn" data-copy="Write a feature spec for [describe what you want]">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code>Write a feature spec for <span class="token-muted">[describe what you want]</span></code></pre>
+          </div>
+
+          <p><strong>Implementation mode</strong> (<code class="inline-code">&lt;feature&gt;</code>) — AI writes the code:</p>
 
           <div class="code-block">
             <div class="code-header">
@@ -905,7 +885,12 @@ A clear description of what this feature does.
 
           <div class="info-box warning">
             <span class="info-box-icon">⚠️</span>
-            <p><strong>Why re-compile?</strong> The AI updates your feature file with glossary entries. These changes only appear in agent.md after you re-compile.</p>
+            <p><strong>Why re-compile?</strong> AI updates feature files with glossary entries. Re-compile picks up these changes and auto-runs verification on any uncommitted code.</p>
+          </div>
+
+          <div class="info-box tip">
+            <span class="info-box-icon">🧠</span>
+            <p><strong>Self-improving:</strong> When AI detects a consistent pattern not already learned, it asks if you want to save it. Confirmed patterns are enforced in all future sessions.</p>
           </div>
         </div>
       </div>
@@ -954,17 +939,25 @@ A clear description of what this feature does.
             <div class="file-tree-item folder" style="padding-left: 1rem;">├─ 📁 agents/</div>
             <div class="file-tree-item file" style="padding-left: 2rem;">├─ detective.md</div>
             <div class="file-tree-item file" style="padding-left: 2rem;">├─ architect.md</div>
-            <div class="file-tree-item file" style="padding-left: 2rem;">└─ scribe.md</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">├─ scribe.md</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">└─ patterns.md</div>
+            <div class="file-tree-item folder" style="padding-left: 1rem;">├─ 📁 hooks/</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">├─ pre-commit</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">├─ glossary-check</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">└─ pattern-check</div>
+            <div class="file-tree-item folder" style="padding-left: 1rem;">├─ 📁 patterns/</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">└─ learned.json</div>
             <div class="file-tree-item folder" style="padding-left: 1rem;">├─ 📁 schemas/</div>
             <div class="file-tree-item file" style="padding-left: 2rem;">├─ conventions.schema.json</div>
-            <div class="file-tree-item file" style="padding-left: 2rem;">└─ manifest.schema.json</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">├─ manifest.schema.json</div>
+            <div class="file-tree-item file" style="padding-left: 2rem;">└─ learned.schema.json</div>
             <div class="file-tree-item folder" style="padding-left: 1rem;">└─ 📁 features/</div>
             <div class="file-tree-item file" style="padding-left: 2rem;">└─ _template.md</div>
           </div>
 
           <div class="info-box tip">
             <span class="info-box-icon">💡</span>
-            <p><strong>~10 files. Specialized agents with JSON schema contracts.</strong></p>
+            <p><strong>Specialized agents, hooks, patterns, and JSON schema contracts.</strong></p>
           </div>
         </div>
       </div>
@@ -974,12 +967,12 @@ A clear description of what this feature does.
           <div class="step-number"><span>2</span></div>
           <div class="step-title">
             <h3>Bootstrap Your Codebase</h3>
-            <p>Let AI map your existing code into features</p>
+            <p>AI maps existing code AND learns patterns</p>
           </div>
           <div class="step-toggle">▼</div>
         </div>
         <div class="step-content">
-          <p>The bootstrap process uses the Detective agent to analyze your codebase, identify logical feature boundaries, and generate feature files with pre-populated glossaries.</p>
+          <p>Bootstrap analyzes your codebase, identifies feature boundaries, generates feature files, <strong>and automatically learns project patterns</strong>.</p>
           
           <div class="code-block">
             <div class="code-header">
@@ -991,11 +984,21 @@ A clear description of what this feature does.
             <pre><code><span class="token-path">.github/idd/compile.sh</span> <span class="token-flag">--bootstrap</span></code></pre>
           </div>
 
-          <p>Then run the loop (compile → select agent.md → prompt → repeat) until complete.</p>
+          <p>Select <code class="inline-code">agent.md</code> and prompt:</p>
+          
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">prompt</span>
+              <button class="copy-btn" data-copy="Bootstrap this codebase">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code>Bootstrap this codebase</code></pre>
+          </div>
 
           <div class="info-box info">
             <span class="info-box-icon">ℹ️</span>
-            <p><strong>What happens:</strong> Detective agent analyzes patterns, then creates feature files like <code class="inline-code">auth.md</code>, <code class="inline-code">billing.md</code> based on your code structure, with glossaries already populated.</p>
+            <p><strong>What happens:</strong> Detective analyzes patterns, creates feature files like <code class="inline-code">auth.md</code>, <code class="inline-code">billing.md</code> with glossaries, and captures rules like "use Pydantic for models". Re-compile and repeat until complete.</p>
           </div>
         </div>
       </div>
@@ -1074,7 +1077,7 @@ A clear description of what this feature does.
               <div class="loop-step active">
                 <div class="loop-step-number">1</div>
                 <h4>COMPILE</h4>
-                <p>compile.sh &lt;feature&gt;</p>
+                <p>compile.sh [feature]</p>
               </div>
               <div class="loop-arrow">→</div>
               <div class="loop-step">
@@ -1086,7 +1089,7 @@ A clear description of what this feature does.
               <div class="loop-step">
                 <div class="loop-step-number">3</div>
                 <h4>PROMPT</h4>
-                <p>"Implement the feature"</p>
+                <p>See prompts below</p>
               </div>
               <div class="loop-arrow">→</div>
               <div class="loop-step">
@@ -1096,8 +1099,32 @@ A clear description of what this feature does.
               </div>
             </div>
             <div class="loop-back">
-              <span>↩ Always re-compile before each AI session</span>
+              <span>↩ Verification runs automatically on compile</span>
             </div>
+          </div>
+
+          <p><strong>Authoring mode</strong> (no args) — AI writes the feature spec:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">prompt</span>
+              <button class="copy-btn" data-copy="Write a feature spec for [describe what you want]">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code>Write a feature spec for <span class="token-muted">[describe what you want]</span></code></pre>
+          </div>
+
+          <p><strong>Implementation mode</strong> (<code class="inline-code">&lt;feature&gt;</code>) — AI writes the code:</p>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-lang">prompt</span>
+              <button class="copy-btn" data-copy="Implement the feature in agent.md">
+                <span>Copy</span>
+              </button>
+            </div>
+            <pre><code>Implement the feature in agent.md</code></pre>
           </div>
 
           <p>Create a new feature:</p>
@@ -1154,6 +1181,70 @@ A clear description of what this feature does.
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <!-- Session Recovery Section -->
+    <section style="margin-top: 3rem;" id="session-recovery">
+      <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; text-align: center;">Session Recovery</h2>
+      
+      <div style="max-width: 600px; margin: 0 auto; text-align: center;">
+        <p style="font-size: 0.9375rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+          When your AI chat ends or you need to continue in a new session:
+        </p>
+        
+        <div class="code-block" style="text-align: left;">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" data-copy=".github/idd/compile.sh --resume">
+              <span>Copy</span>
+            </button>
+          </div>
+          <pre><code><span class="token-path">.github/idd/compile.sh</span> <span class="token-flag">--resume</span></code></pre>
+        </div>
+        
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 1rem 0;">
+          Then select <code class="inline-code">agent.md</code> and prompt:
+        </p>
+        
+        <div class="code-block" style="text-align: left;">
+          <div class="code-header">
+            <span class="code-lang">prompt</span>
+            <button class="copy-btn" data-copy="Continue from the session context in agent.md">
+              <span>Copy</span>
+            </button>
+          </div>
+          <pre><code>Continue from the session context in agent.md</code></pre>
+        </div>
+        
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 1rem;">
+          Check current state: <code class="inline-code">--status</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- Optional: Git Hooks Section -->
+    <section style="margin-top: 3rem;" id="hooks">
+      <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; text-align: center;">Optional: Git Hooks</h2>
+      
+      <div style="max-width: 600px; margin: 0 auto;">
+        <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem; text-align: center;">
+          Pre-commit validation for JSON validity, glossary anchors, and pattern compliance.
+        </p>
+        
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <button class="copy-btn" data-copy=".github/idd/compile.sh --hooks install">
+              <span>Copy</span>
+            </button>
+          </div>
+          <pre><code><span class="token-path">.github/idd/compile.sh</span> <span class="token-flag">--hooks install</span></code></pre>
+        </div>
+        
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem; text-align: center;">
+          Also: <code class="inline-code">--hooks run</code> manually, <code class="inline-code">--hooks uninstall</code>, <code class="inline-code">--hooks install --warn-only</code>
+        </p>
+      </div>
     </section>
   </main>
 

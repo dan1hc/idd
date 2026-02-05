@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IDD Pattern Overrides",
+  "description": "User-specified overrides that replace or suppress detected conventions",
+  "type": "object",
+  "required": ["version", "overrides"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string"
+    },
+    "last_updated": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "overrides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/override"
+      }
+    }
+  },
+  "definitions": {
+    "override": {
+      "type": "object",
+      "required": ["target", "action"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "JSON path to the convention field to override",
+          "examples": ["formatting.quotes", "style.error_handling.pattern", "testing.framework"]
+        },
+        "action": {
+          "type": "string",
+          "enum": ["replace", "suppress", "merge"],
+          "description": "What to do with the target"
+        },
+        "value": {
+          "description": "New value (required for 'replace' and 'merge' actions)"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this override exists"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

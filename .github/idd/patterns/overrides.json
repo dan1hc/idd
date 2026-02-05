@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "description": "User-specified overrides that take precedence over detected conventions",
+  "last_updated": null,
+  "overrides": []
+}

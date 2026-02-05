@@ -63,8 +63,106 @@ grep -n "IDD:user-auth:login-handler" src/auth/handler.py
 
 **If an anchor doesn't resolve:**
 1. Check for typos (did Architect use a different name?)
-2. Search for similar symbols
-3. If truly missing, flag it in the validation report
+2. **Use fuzzy matching** to find similar symbols
+3. Offer "Did you mean?" suggestions
+4. If truly missing, flag it in the validation report
+
+---
+
+### Step 2.5: Fuzzy Matching for Missing Symbols
+
+When a symbol isn't found exactly, use fuzzy matching to find candidates:
+
+#### Strategy 1: Partial Name Match
+```bash
+# Symbol: "validate_credentials" not found
+# Try partial matches
+grep -rn "validate\|credentials" src/auth/handler.py --include="*.py"
+
+# Symbol: "LoginRequest" not found  
+# Try case variations and partial matches
+grep -rn -i "login.*request\|loginreq" src/auth/ --include="*.py"
+```
+
+#### Strategy 2: Edit Distance Heuristics
+Look for symbols that differ by:
+- **Typos**: `valiadte` → `validate`
+- **Underscores vs camelCase**: `validateCredentials` → `validate_credentials`
+- **Plural/singular**: `User` → `Users`
+- **Suffix variations**: `handle` → `handler`, `create` → `created`
+
+#### Strategy 3: Semantic Similarity
+```bash
+# Looking for "check_password", found these similar symbols:
+grep -rn "def.*password\|def.*credential\|def.*auth" {file} --include="*.py"
+```
+
+#### Generating "Did You Mean?" Suggestions
+
+Score candidates by similarity:
+
+```
+Missing:  validate_credentails
+Found:    validate_credentials  (edit distance: 1)  ← BEST MATCH
+Found:    check_credentials     (edit distance: 8)
+Found:    validate_input        (edit distance: 7)
+
+⚠️ Symbol `validate_credentails` not found
+   Did you mean: `validate_credentials`? (likely typo)
+```
+
+#### Auto-Correction Rules
+
+Safe to auto-correct (just inform user):
+- Obvious typos (edit distance ≤ 2, same file)
+- Case differences (`LoginRequest` vs `loginRequest`)
+- Leading/trailing whitespace
+
+Requires confirmation:
+- Different file location
+- Multiple equally-good candidates
+- Edit distance > 2
+
+#### Fuzzy Match Output Format
+
+```markdown
+### Symbol Resolution Report
+
+| Manifest Symbol | Found Symbol | Action | Confidence |
+|-----------------|--------------|--------|------------|
+| `validate_credentails` | `validate_credentials` | Auto-corrected | 98% |
+| `LoginReq` | `LoginRequest` | Auto-corrected | 95% |
+| `handle_auth` | `authenticate` or `handle_login` | Needs confirmation | 50% |
+| `missing_func` | — | Not found | — |
+```
+
+#### When No Match Found
+
+If fuzzy matching finds nothing reasonable:
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ ⚠️  SYMBOL NOT FOUND                                           │
+├────────────────────────────────────────────────────────────────┤
+│ Looking for: src/auth/handler.py::validate_credentials         │
+│                                                                │
+│ File exists: ✓                                                 │
+│ Symbol in file: ✗                                              │
+│                                                                │
+│ Similar symbols in this file:                                  │
+│   • verify_credentials (line 42)                               │
+│   • validate_token (line 78)                                   │
+│   • check_user_credentials (line 103)                          │
+│                                                                │
+│ Similar symbols in other files:                                │
+│   • src/auth/utils.py::validate_credentials (line 15)          │
+│                                                                │
+│ Action needed:                                                 │
+│   1. Architect may have used a different name                  │
+│   2. Symbol may not have been implemented                      │
+│   3. File path may be wrong                                    │
+└────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -182,10 +280,23 @@ None
 If issues exist:
 ```markdown
 ### Issues Found
-| Anchor | Issue | Suggestion |
-|--------|-------|------------|
-| `src/auth/handler.py::verify_token` | Symbol not found | Did you mean `validate_token`? |
-| `src/auth/handler.py::#user-auth:missing` | Marker not found | Add marker or remove from glossary |
+
+#### Auto-Corrected (High Confidence)
+| Manifest Symbol | Corrected To | Reason |
+|-----------------|--------------|--------|
+| `validate_credentails` | `validate_credentials` | Typo (edit distance: 1) |
+| `LoginReq` | `LoginRequest` | Partial match |
+
+#### Needs Confirmation
+| Anchor | Issue | Candidates | Suggestion |
+|--------|-------|------------|------------|
+| `src/auth/handler.py::handle_auth` | Symbol not found | `authenticate` (45%), `handle_login` (42%) | Please confirm which symbol to use |
+
+#### Not Found (Action Required)
+| Anchor | Issue | Search Attempted | Recommendation |
+|--------|-------|------------------|----------------|
+| `src/auth/handler.py::verify_token` | Symbol not found | Searched file + similar names | May not be implemented yet |
+| `src/auth/handler.py::#user-auth:missing` | Marker not found | Searched all files | Add marker or remove from glossary |
 ```
 
 ---

@@ -5,6 +5,10 @@
   "type": "object",
   "required": ["feature", "timestamp", "changes"],
   "properties": {
+    "idd_version": {
+      "type": "string",
+      "description": "IDD version that generated this manifest"
+    },
     "feature": {
       "type": "string",
       "description": "Feature name being implemented"
@@ -115,6 +119,87 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Recommended next actions if incomplete"
+    },
+    "patterns_applied": {
+      "type": "array",
+      "description": "Learned patterns that were applied during implementation",
+      "items": {
+        "type": "object",
+        "required": ["pattern_id"],
+        "properties": {
+          "pattern_id": {
+            "type": "string",
+            "description": "ID of the learned pattern"
+          },
+          "applied_to": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Files where this pattern was applied"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of times pattern was applied"
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Non-blocking issues encountered during implementation",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Warning code for categorization",
+            "examples": ["AMBIGUOUS_CONVENTION", "MISSING_TEST", "DEPRECATED_PATTERN", "POTENTIAL_DUPLICATE"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable warning message"
+          },
+          "file": {
+            "type": "string",
+            "description": "File related to the warning (if applicable)"
+          },
+          "suggestion": {
+            "type": "string",
+            "description": "Suggested action to resolve the warning"
+          }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Blocking issues that prevented full implementation",
+      "items": {
+        "type": "object",
+        "required": ["code", "message", "blocking"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code for categorization",
+            "examples": ["MISSING_DEPENDENCY", "CONFLICTING_PATTERN", "INVALID_CONVENTION", "CIRCULAR_IMPORT"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "blocking": {
+            "type": "boolean",
+            "description": "Whether this error prevented completion"
+          },
+          "file": {
+            "type": "string",
+            "description": "File related to the error (if applicable)"
+          },
+          "resolution": {
+            "type": "string",
+            "description": "How to resolve this error"
+          }
+        }
+      }
     }
   }
 }

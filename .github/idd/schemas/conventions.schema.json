@@ -5,6 +5,10 @@
   "type": "object",
   "required": ["language", "formatting", "detected_at"],
   "properties": {
+    "idd_version": {
+      "type": "string",
+      "description": "IDD version that generated this conventions file"
+    },
     "detected_at": {
       "type": "string",
       "format": "date-time",
@@ -292,6 +296,176 @@
         "source": {
           "type": "string",
           "enum": ["config", "inferred", "fallback"]
+        }
+      }
+    },
+    "centralized_components": {
+      "type": "object",
+      "description": "Locations and inventories of reusable components - Architect MUST check these before creating new ones",
+      "properties": {
+        "models": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "Directory where models are centralized",
+              "examples": ["src/models/", "app/schemas/"]
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Pattern for model definitions",
+              "examples": ["class {Name}(BaseModel)", "interface {Name}"]
+            },
+            "existing": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of existing model names"
+            }
+          }
+        },
+        "enums": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "Directory where enums are centralized"
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Pattern for enum definitions"
+            },
+            "existing": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "List of existing enum names"
+            }
+          }
+        },
+        "services": {
+          "type": "object",
+          "properties": {
+            "location": { "type": "string" },
+            "existing": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "clients": {
+          "type": "object",
+          "properties": {
+            "location": { "type": "string" },
+            "existing": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "constants": {
+          "type": "object",
+          "properties": {
+            "location": { "type": "string" },
+            "existing": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "monorepo": {
+      "type": "object",
+      "description": "Monorepo configuration if multiple packages detected",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["npm-workspaces", "pnpm", "lerna", "yarn-workspaces", "python-multi", "go-multi", "rust-workspace", "custom"],
+          "description": "Type of monorepo setup"
+        },
+        "packages": {
+          "type": "array",
+          "description": "List of packages/apps in the monorepo",
+          "items": {
+            "type": "object",
+            "required": ["name", "path"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Package name"
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path to package root"
+              },
+              "language": {
+                "type": "string",
+                "description": "Primary language of this package"
+              },
+              "framework": {
+                "type": ["string", "null"],
+                "description": "Framework used in this package"
+              },
+              "package_file": {
+                "type": "string",
+                "description": "Path to package config (package.json, pyproject.toml, etc.)"
+              },
+              "dependencies_on": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Names of other packages this depends on"
+              }
+            }
+          }
+        },
+        "shared_configs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Root-level config files shared across packages"
+        },
+        "per_package_detection_needed": {
+          "type": "boolean",
+          "description": "Whether individual packages need separate convention detection"
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Detection warnings for Architect awareness",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Warning code for categorization",
+            "examples": ["AMBIGUOUS_PATTERN", "NO_EVIDENCE", "OVERRIDE_APPLIED", "LEARNED_CONFLICT"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable warning message"
+          },
+          "suggestion": {
+            "type": "string",
+            "description": "Suggested action to resolve"
+          }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Critical errors that may block implementation",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          }
         }
       }
     }
