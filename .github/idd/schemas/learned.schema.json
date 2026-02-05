@@ -38,6 +38,7 @@
           "type": "string",
           "enum": [
             "library",
+            "library-usage",
             "style",
             "error-handling",
             "testing",
@@ -46,6 +47,7 @@
             "naming",
             "documentation",
             "api",
+            "integration",
             "custom"
           ],
           "description": "Category of the pattern"
@@ -146,6 +148,39 @@
           },
           "description": "Optional tags for filtering/grouping",
           "examples": [["python", "pydantic"], ["error-handling", "debugging"]]
+        },
+        "library_context": {
+          "type": "object",
+          "description": "Additional context for library-usage patterns",
+          "properties": {
+            "library_name": {
+              "type": "string",
+              "description": "The library this pattern applies to",
+              "examples": ["pydantic", "httpx", "sqlalchemy", "axios", "react-query"]
+            },
+            "library_version": {
+              "type": "string",
+              "description": "Version constraint if applicable",
+              "examples": ["2.x", ">=0.24.0", "^5.0.0"]
+            },
+            "wrapper_location": {
+              "type": "string",
+              "description": "Path to project wrapper/abstraction if any",
+              "examples": ["src/clients/base.py", "lib/api/client.ts"]
+            },
+            "config_location": {
+              "type": "string",
+              "description": "Path to library configuration if any",
+              "examples": ["src/config/database.py", "lib/db/config.ts"]
+            },
+            "anti_patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Common mistakes to avoid with this library"
+            }
+          }
         },
         "related_patterns": {
           "type": "array",

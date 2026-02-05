@@ -698,59 +698,22 @@ if [[ "$1" == "--patterns" ]]; then
     fi
     
     # Parse and display patterns
-    python3 << 'PYTHON_SCRIPT'
+    python3 -c "
 import json
 import sys
 
 try:
-    with open('LEARNED_FILE_PLACEHOLDER', 'r') as f:
+    with open('$LEARNED_FILE', 'r') as f:
         data = json.load(f)
 except Exception as e:
-    print(f"Error reading learned.json: {e}")
+    print(f'Error reading learned.json: {e}')
     sys.exit(1)
 
 patterns = data.get('patterns', [])
 if not patterns:
-    print("\033[0;33mNo learned patterns yet.\033[0m")
-    print("\nRun --learn to start an interactive pattern learning session.")
-    sys.exit(0)
-
-active = [p for p in patterns if p.get('enabled', True)]
-inactive = [p for p in patterns if not p.get('enabled', True)]
-
-print(f"\033[1m📋 LEARNED PATTERNS ({len(active)} active, {len(inactive)} disabled)\033[0m")
-print("─" * 64)
-
-for i, p in enumerate(patterns, 1):
-    status = "✓" if p.get('enabled', True) else "○"
-    ptype = p.get('type', 'custom')
-    pid = p.get('id', 'unknown')
-    priority = p.get('priority', 50)
-    rule = p.get('rule', 'No rule specified')
-    
-    # Truncate rule if too long
-    if len(rule) > 55:
-        rule = rule[:52] + "..."
-    
-    print(f"\n{status} {i}. [{ptype}] \033[1m{pid}\033[0m (priority: {priority})")
-    print(f"   {rule}")
-
-print("\n" + "─" * 64)
-print("Commands:")
-print("  ./compile.sh --forget <id>    Remove a pattern")
-print("  ./compile.sh --learn          Add new patterns interactively")
-PYTHON_SCRIPT
-    
-    # Replace placeholder with actual path
-    python3 -c "
-import json
-with open('$LEARNED_FILE', 'r') as f:
-    data = json.load(f)
-patterns = data.get('patterns', [])
-if not patterns:
     print('\033[0;33mNo learned patterns yet.\033[0m')
     print('\nRun --learn to start an interactive pattern learning session.')
-    exit(0)
+    sys.exit(0)
 
 active = [p for p in patterns if p.get('enabled', True)]
 inactive = [p for p in patterns if not p.get('enabled', True)]
@@ -902,6 +865,28 @@ if [[ "$1" == "--learn" ]]; then
         echo "---"
         echo ""
         echo "# Task"
+        echo ""
+        echo "## PRIORITY: Deep Library Analysis"
+        echo ""
+        echo "The most valuable patterns come from understanding HOW libraries are used, not just THAT they exist."
+        echo ""
+        echo "For EACH significant library in this project:"
+        echo "1. Find where it's imported and used"
+        echo "2. Look for wrapper classes, base classes, or configuration"
+        echo "3. Analyze actual usage patterns (not just imports)"
+        echo "4. Present findings to user with specific code examples"
+        echo "5. Propose patterns based on consistent usage"
+        echo ""
+        echo "Library categories to analyze:"
+        echo "- HTTP clients (axios, requests, httpx, fetch)"
+        echo "- Validation (pydantic, zod, joi, class-validator)"
+        echo "- ORM/Database (SQLAlchemy, Prisma, TypeORM, Drizzle)"
+        echo "- Web framework (FastAPI, Express, Next.js, Flask)"
+        echo "- Testing (pytest, jest, vitest)"
+        echo "- State management (React Query, Redux, Zustand)"
+        echo "- Logging (structlog, winston, pino)"
+        echo ""
+        echo "## General Pattern Learning"
         echo ""
         echo "1. If conventions.json exists above, review it for implicit patterns"
         echo "2. Analyze the codebase to discover additional potential patterns"
@@ -1221,10 +1206,14 @@ if [[ "$1" == "--bootstrap" ]]; then
         echo ""
         echo "Analyze this codebase and:"
         echo "1. Run Detective to detect patterns → output conventions.json"
-        echo "2. Identify logical feature boundaries (modules, services, route groups)"
-        echo "3. For each boundary, create a feature file in .github/idd/features/"
-        echo "4. Pre-populate glossaries with existing code symbols"
-        echo "5. Mark features as status: complete (they already exist)"
+        echo "2. **CRITICAL: Deep Library Analysis** - For each library found:"
+        echo "   - Find wrappers, base classes, configuration"
+        echo "   - Analyze actual usage patterns with code examples"
+        echo "   - Extract library-specific best practices"
+        echo "3. Identify logical feature boundaries (modules, services, route groups)"
+        echo "4. For each boundary, create a feature file in .github/idd/features/"
+        echo "5. Pre-populate glossaries with existing code symbols"
+        echo "6. Mark features as status: complete (they already exist)"
         echo ""
         echo "Feature boundaries to look for:"
         echo "- Distinct directories (src/auth/, src/billing/)"
@@ -1242,7 +1231,22 @@ if [[ "$1" == "--bootstrap" ]]; then
         echo ""
         echo "---"
         echo ""
-        echo "Capture patterns like:"
+        echo "## PRIORITY: Library Usage Patterns"
+        echo ""
+        echo "The most common gap in AI-generated code is NOT KNOWING how libraries are used in this specific project."
+        echo ""
+        echo "For EACH significant library, extract:"
+        echo "- Wrapper classes (e.g., 'BaseClient wraps httpx')"
+        echo "- Configuration (e.g., 'default timeout is 30s')"
+        echo "- Base classes (e.g., 'all models inherit AppBaseModel')"
+        echo "- Integration patterns (e.g., 'ORM → Pydantic → Response')"
+        echo ""
+        echo "Present findings WITH CODE EXAMPLES and ask user to confirm."
+        echo ""
+        echo "---"
+        echo ""
+        echo "## Other Patterns to Capture"
+        echo ""
         echo "- \"All models use Pydantic BaseModel\""
         echo "- \"Never raise exceptions from within except blocks\""
         echo "- \"Use structlog for all logging\""

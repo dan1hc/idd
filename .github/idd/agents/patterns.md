@@ -37,6 +37,7 @@ You are activated when:
 | Type | Description | Example |
 |------|-------------|---------|
 | `library` | Required libraries/frameworks | "All models MUST use Pydantic" |
+| `library-usage` | HOW a library should be used | "Use httpx.AsyncClient, never httpx.get directly" |
 | `style` | Code style beyond formatting | "Use list comprehensions over map/filter" |
 | `error-handling` | How errors are handled | "Never raise from within except without chaining" |
 | `testing` | Testing requirements | "All public functions MUST have tests" |
@@ -45,7 +46,105 @@ You are activated when:
 | `naming` | Naming beyond snake/camel | "Models end with 'Model', DTOs with 'DTO'" |
 | `documentation` | Doc requirements | "All public APIs MUST have docstrings" |
 | `api` | API design patterns | "All responses use ResponseEnvelope" |
+| `integration` | How libraries work together | "Convert ORM models to Pydantic before returning" |
 | `custom` | Project-specific rules | "Never use the legacy auth module" |
+
+---
+
+## Library Best Practices: Deep Analysis
+
+The most valuable patterns come from understanding **how** libraries are actually used, not just **that** they're used. When learning patterns, dig deep.
+
+### Questions to Ask About Each Library
+
+#### HTTP Clients (axios, requests, httpx, fetch)
+- Is there a configured client instance, or raw function calls?
+- What's the default timeout? Retry policy?
+- Is there a base URL configured?
+- Are there auth headers/interceptors?
+- How are errors handled?
+
+**Example patterns to extract**:
+```
+"Always use the pre-configured ApiClient from src/clients/base.py"
+"Never use axios.get() directly - use client.get() which has auth configured"
+"All HTTP calls must use tenacity retry decorator"
+```
+
+#### Validation (pydantic, zod, joi)
+- Is there a custom base model/schema?
+- What's the default config (strict mode, aliases)?
+- Are there custom validators used project-wide?
+- How do models handle serialization?
+
+**Example patterns to extract**:
+```
+"All models MUST inherit from src/models/base.py BaseModel, not pydantic.BaseModel"
+"Use model_config = ConfigDict(from_attributes=True) for ORM compatibility"
+"Use @field_validator with mode='before' for input normalization"
+```
+
+#### ORM (SQLAlchemy, Prisma, TypeORM)
+- Is it async or sync?
+- What's the session/connection pattern?
+- How are relationships loaded (lazy, eager, selectin)?
+- Is there a repository pattern?
+
+**Example patterns to extract**:
+```
+"Use Mapped[type] with mapped_column(), never Column()"
+"Always use selectinload() for relationships, not joinedload()"
+"Get db session via Depends(get_db), never create directly"
+```
+
+#### Web Framework (FastAPI, Express, Next.js)
+- Is there dependency injection? How?
+- What's the error handling pattern?
+- Is there a response wrapper/envelope?
+- How is auth/permissions handled?
+
+**Example patterns to extract**:
+```
+"Inject services via Depends(), never instantiate in endpoint"
+"All endpoints MUST return ResponseEnvelope[T]"
+"Use @require_permission('resource:action') for authz"
+```
+
+#### Testing (pytest, jest, vitest)
+- Are there factories for test data?
+- What's the fixture pattern?
+- How are mocks handled?
+- Integration vs unit test organization?
+
+**Example patterns to extract**:
+```
+"Use factories from tests/factories/ for test data, never inline dict/object"
+"Use pytest.mark.asyncio for async tests"
+"Mock at service boundary, not internal functions"
+```
+
+### Extracting Patterns Automatically
+
+When analyzing the codebase, look for:
+
+1. **Wrapper classes/functions** - If there's `src/clients/base.py` wrapping axios/httpx, that's a pattern
+2. **Custom base classes** - If models inherit from a custom BaseModel, that's a pattern
+3. **Configuration files** - If there's special config (pydantic settings, ORM config), extract it
+4. **Consistent deviations** - If EVERY file does something non-default, that's a pattern
+
+### Pattern Extraction Template
+
+For each library, fill in:
+
+```
+Library: {name}
+Version: {version}
+Project Wrapper: {custom class/function if any}
+Default Configuration: {extracted config}
+Usage Pattern: {how it's typically used}
+Integration: {how it connects to other libraries}
+Anti-patterns: {what NOT to do}
+```
 
 ---
 
@@ -137,6 +236,182 @@ When starting a new session or after bootstrap, proactively ask:
 │                                                                │
 │ Tell me your rules and I'll remember them forever.             │
 └────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Process: Deep Library Learning
+
+**This is the most important part of pattern learning.** Don't just note that a library exists—understand exactly HOW it's used.
+
+### Step 1: Analyze Library Usage
+
+For each significant library in the project, investigate:
+
+```bash
+# 1. Find where the library is imported
+grep -rn "import.*{library}\\|from.*{library}" --include="*.py" --include="*.ts" | head -20
+
+# 2. Look for configuration/setup
+find . -name "*config*" -o -name "*setup*" -o -name "*init*" | xargs grep -l "{library}" 2>/dev/null
+
+# 3. Look for wrappers/abstractions
+find . -name "*client*" -o -name "*service*" -o -name "*adapter*" | xargs grep -l "{library}" 2>/dev/null
+
+# 4. Sample actual usage
+grep -rn "{library}" --include="*.py" --include="*.ts" | grep -v "import\|from" | head -30
+```
+
+### Step 2: Present Findings for Confirmation
+
+For each library, present what you found:
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ 📦 LIBRARY ANALYSIS: httpx                                     │
+├────────────────────────────────────────────────────────────────┤
+│ Usage detected in 15 files                                     │
+│                                                                │
+│ KEY FINDINGS:                                                  │
+│                                                                │
+│ 1. Wrapper Class Found:                                        │
+│    📁 src/clients/base.py                                      │
+│    ┌──────────────────────────────────────────────────────┐    │
+│    │ class BaseClient:                                    │    │
+│    │     def __init__(self, base_url: str):               │    │
+│    │         self._client = httpx.AsyncClient(            │    │
+│    │             base_url=base_url,                       │    │
+│    │             timeout=30.0,                            │    │
+│    │             headers={"Authorization": f"Bearer..."}  │    │
+│    │         )                                            │    │
+│    └──────────────────────────────────────────────────────┘    │
+│                                                                │
+│ 2. Retry Configuration Found:                                  │
+│    📁 src/clients/base.py                                      │
+│    ┌──────────────────────────────────────────────────────┐    │
+│    │ @retry(stop=stop_after_attempt(3), wait=wait_exp...) │    │
+│    │ async def _request(self, ...):                       │    │
+│    └──────────────────────────────────────────────────────┘    │
+│                                                                │
+│ 3. All clients inherit from BaseClient:                        │
+│    • PaymentClient(BaseClient)                                 │
+│    • UserClient(BaseClient)                                    │
+│    • NotificationClient(BaseClient)                            │
+│                                                                │
+│ PROPOSED PATTERNS:                                             │
+│                                                                │
+│ [1] All HTTP clients MUST inherit from BaseClient              │
+│     (never use httpx directly)                                 │
+│     Rationale: Ensures consistent timeout, retry, and auth     │
+│                                                                │
+│ [2] Use async context manager for client lifecycle             │
+│     Rationale: Proper resource cleanup                         │
+│                                                                │
+│ [3] Use tenacity @retry decorator for retryable operations     │
+│     Rationale: Consistent retry behavior across clients        │
+│                                                                │
+├────────────────────────────────────────────────────────────────┤
+│ Accept these patterns?                                         │
+│ [A] Accept all  [R] Review each  [E] Edit  [S] Skip library    │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Step 3: Drill Down on Complex Libraries
+
+For complex libraries (ORMs, frameworks, validation), go deeper:
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ 📦 LIBRARY ANALYSIS: SQLAlchemy (ORM)                          │
+├────────────────────────────────────────────────────────────────┤
+│ This is a complex library. Let me analyze in detail...         │
+│                                                                │
+│ MODEL DEFINITION PATTERN:                                      │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ # from src/models/user.py                                │   │
+│ │ class User(Base):                                        │   │
+│ │     __tablename__ = "users"                              │   │
+│ │     id: Mapped[int] = mapped_column(primary_key=True)    │   │
+│ │     email: Mapped[str] = mapped_column(unique=True)      │   │
+│ │     created_at: Mapped[datetime] = mapped_column(        │   │
+│ │         server_default=func.now()                        │   │
+│ │     )                                                    │   │
+│ └──────────────────────────────────────────────────────────┘   │
+│                                                                │
+│ RELATIONSHIP PATTERN:                                          │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ orders: Mapped[list["Order"]] = relationship(            │   │
+│ │     back_populates="user",                               │   │
+│ │     lazy="selectin"  # ← Always selectin, never lazy    │   │
+│ │ )                                                        │   │
+│ └──────────────────────────────────────────────────────────┘   │
+│                                                                │
+│ SESSION PATTERN:                                               │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ # from src/database/session.py                           │   │
+│ │ async def get_db() -> AsyncGenerator[AsyncSession, None]:│   │
+│ │     async with async_session_maker() as session:         │   │
+│ │         yield session                                    │   │
+│ │                                                          │   │
+│ │ # In routes - always use Depends()                       │   │
+│ │ async def get_user(db: AsyncSession = Depends(get_db)):  │   │
+│ └──────────────────────────────────────────────────────────┘   │
+│                                                                │
+│ QUERY PATTERN:                                                 │
+│ ┌──────────────────────────────────────────────────────────┐   │
+│ │ # Uses select() style, not query()                       │   │
+│ │ stmt = select(User).where(User.id == user_id)            │   │
+│ │ result = await db.execute(stmt)                          │   │
+│ │ user = result.scalar_one_or_none()                       │   │
+│ └──────────────────────────────────────────────────────────┘   │
+│                                                                │
+│ PROPOSED PATTERNS (6):                                         │
+│                                                                │
+│ [1] Use Mapped[type] with mapped_column(), not Column()        │
+│ [2] Use relationship(..., lazy="selectin"), never lazy load    │
+│ [3] Get session via Depends(get_db), never create directly     │
+│ [4] Use select() style queries, not Query()                    │
+│ [5] All models inherit from src/database/base.py::Base         │
+│ [6] Use scalar_one_or_none() for optional results              │
+│                                                                │
+├────────────────────────────────────────────────────────────────┤
+│ [A] Accept all  [R] Review each  [E] Edit  [S] Skip library    │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Step 4: Record Library Patterns
+
+When patterns are confirmed, save with full context:
+
+```json
+{
+  "id": "sqlalchemy-use-mapped-column",
+  "type": "library-usage",
+  "rule": "Use Mapped[type] with mapped_column(), never Column()",
+  "rationale": "Mapped provides better type hints and IDE support with SQLAlchemy 2.0",
+  "library_context": {
+    "library_name": "sqlalchemy",
+    "library_version": "2.x",
+    "wrapper_location": "src/database/base.py",
+    "config_location": "src/database/session.py",
+    "anti_patterns": [
+      "Column(Integer) - old style",
+      "query(Model).filter() - deprecated Query API"
+    ]
+  },
+  "examples": {
+    "good": [{
+      "code": "id: Mapped[int] = mapped_column(primary_key=True)",
+      "explanation": "Modern SQLAlchemy 2.0 style with type hints"
+    }],
+    "bad": [{
+      "code": "id = Column(Integer, primary_key=True)",
+      "explanation": "Old SQLAlchemy 1.x style without type hints"
+    }]
+  },
+  "priority": 75,
+  "tags": ["python", "sqlalchemy", "orm", "models"]
+}
 ```
 
 ---

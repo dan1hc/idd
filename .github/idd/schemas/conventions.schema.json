@@ -299,6 +299,134 @@
         }
       }
     },
+    "libraries": {
+      "type": "object",
+      "description": "Deep analysis of how project libraries are actually used - this is CRITICAL for understanding best practices",
+      "additionalProperties": {
+        "type": "object",
+        "description": "Library category (http_client, validation, orm, web_framework, testing, logging, state_management, etc.)",
+        "properties": {
+          "library": {
+            "type": "string",
+            "description": "Library name",
+            "examples": ["httpx", "pydantic", "sqlalchemy", "fastapi", "axios", "react-query"]
+          },
+          "version": {
+            "type": "string",
+            "description": "Version constraint or detected version",
+            "examples": ["2.x", ">=0.24.0", "^5.0.0"]
+          },
+          "usage_pattern": {
+            "type": "object",
+            "description": "How the library is used in this project",
+            "properties": {
+              "style": {
+                "type": "string",
+                "description": "Usage style identifier",
+                "examples": ["configured_client", "strict_models", "declarative_mapped", "router_based"]
+              },
+              "wrapper_location": {
+                "type": "string",
+                "description": "Path to project wrapper/abstraction if any",
+                "examples": ["src/clients/base.py", "lib/api/client.ts"]
+              },
+              "base_class": {
+                "type": "string",
+                "description": "Custom base class if any",
+                "examples": ["src/models/base.py::BaseModel", "lib/db/entity.ts::BaseEntity"]
+              },
+              "config_location": {
+                "type": "string",
+                "description": "Where library configuration lives"
+              },
+              "configuration": {
+                "type": "object",
+                "description": "Extracted configuration settings",
+                "additionalProperties": true
+              },
+              "evidence": {
+                "type": "string",
+                "description": "Code sample showing typical usage"
+              }
+            }
+          },
+          "patterns": {
+            "type": "array",
+            "description": "Specific usage patterns extracted from codebase",
+            "items": {
+              "type": "object",
+              "required": ["name", "rule"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Pattern identifier",
+                  "examples": ["always_use_base_client", "async_context_manager", "use_mapped_column"]
+                },
+                "rule": {
+                  "type": "string",
+                  "description": "The rule to follow",
+                  "examples": ["All HTTP calls MUST use BaseClient, never raw httpx", "Use Mapped[type] with mapped_column(), not Column()"]
+                },
+                "rationale": {
+                  "type": "string",
+                  "description": "Why this pattern exists"
+                },
+                "evidence": {
+                  "type": "string",
+                  "description": "Code sample demonstrating the pattern"
+                }
+              }
+            }
+          },
+          "anti_patterns": {
+            "type": "array",
+            "description": "What NOT to do with this library in this project",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "description": "The bad pattern to avoid",
+                  "examples": ["Using axios directly instead of ApiClient", "Using Column() instead of mapped_column()"]
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "Why this is bad"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "integration_patterns": {
+      "type": "array",
+      "description": "How libraries work together in this project",
+      "items": {
+        "type": "object",
+        "required": ["name", "flow"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Pattern name",
+            "examples": ["orm_to_api_serialization", "service_layer_pattern", "repository_pattern"]
+          },
+          "flow": {
+            "type": "string",
+            "description": "Data/control flow description",
+            "examples": ["SQLAlchemy Model → Pydantic Schema → JSON Response", "Router → Service → Repository → ORM"]
+          },
+          "implementation": {
+            "type": "string",
+            "description": "How to implement this pattern"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Code sample showing the integration"
+          }
+        }
+      }
+    },
     "centralized_components": {
       "type": "object",
       "description": "Locations and inventories of reusable components - Architect MUST check these before creating new ones",
