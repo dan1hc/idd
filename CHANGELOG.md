@@ -3,6 +3,13 @@
 
 ### Features
 
+* phase-aware compilation, generic pattern enforcement, version tracking ([e63fd71](https://github.com/dan1hc/idd/commit/e63fd718621b64b97e46e1ba549ba400851148d4))
+
+# [1.3.0](https://github.com/dan1hc/idd/compare/v1.2.1...v1.3.0) (2026-02-05)
+
+
+### Features
+
 * phase-aware compilation — resumes at active agent instead of including all 4 ([compile.sh](https://github.com/dan1hc/idd/blob/main/.github/idd/compile.sh))
 * learned patterns included in default feature compilation ([compile.sh](https://github.com/dan1hc/idd/blob/main/.github/idd/compile.sh))
 * slimmed detective in --learn mode — only discovery sections, not full output format ([compile.sh](https://github.com/dan1hc/idd/blob/main/.github/idd/compile.sh))
