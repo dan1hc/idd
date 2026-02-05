@@ -50,10 +50,10 @@ curl -fsSL "$BASE_URL/.github/idd/patterns/templates.json" > .github/idd/pattern
 
 # Hooks
 echo -e "  ${BLUE}→${NC} Downloading hooks..."
-curl -fsSL "$BASE_URL/.github/idd/hooks/pre-commit.sh" > .github/idd/hooks/pre-commit.sh
-curl -fsSL "$BASE_URL/.github/idd/hooks/glossary-check.sh" > .github/idd/hooks/glossary-check.sh
+curl -fsSL "$BASE_URL/.github/idd/hooks/pre-commit" > .github/idd/hooks/pre-commit
+curl -fsSL "$BASE_URL/.github/idd/hooks/glossary-check" > .github/idd/hooks/glossary-check
 curl -fsSL "$BASE_URL/.github/idd/hooks/glossary_check.py" > .github/idd/hooks/glossary_check.py
-curl -fsSL "$BASE_URL/.github/idd/hooks/pattern-check.sh" > .github/idd/hooks/pattern-check.sh
+curl -fsSL "$BASE_URL/.github/idd/hooks/pattern-check" > .github/idd/hooks/pattern-check
 curl -fsSL "$BASE_URL/.github/idd/hooks/pattern_check.py" > .github/idd/hooks/pattern_check.py
 curl -fsSL "$BASE_URL/.github/idd/hooks/validate_json.py" > .github/idd/hooks/validate_json.py
 
@@ -64,7 +64,9 @@ curl -fsSL "$BASE_URL/.github/idd/features/general.md" > .github/idd/features/ge
 
 # Make scripts executable
 chmod +x .github/idd/compile.sh
-chmod +x .github/idd/hooks/*.sh
+chmod +x .github/idd/hooks/pre-commit
+chmod +x .github/idd/hooks/glossary-check
+chmod +x .github/idd/hooks/pattern-check
 
 echo ""
 echo -e "${GREEN}✓${NC} IDD installed successfully!"

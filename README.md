@@ -240,31 +240,42 @@ Install pre-commit validation for JSON validity, glossary anchors, and pattern c
 │               (coordinates the pipeline)                        │
 └─────────────────────────┬───────────────────────────────────────┘
                           │
-          ┌───────────────┼───────────────┐
-          ▼               ▼               ▼
-    ┌──────────┐    ┌──────────┐    ┌──────────┐
-    │ DETECTIVE│───►│ ARCHITECT│───►│  SCRIBE  │
-    │          │    │          │    │          │
-    │ Analyzes │    │ Implements│   │ Validates│
-    │ patterns │    │ features  │   │ glossary │
-    └──────────┘    └──────────┘    └──────────┘
-          │               │               │
-          ▼               ▼               ▼
-    conventions.json  manifest.json  feature.md
+     ┌────────────────────┼────────────────────┐
+     ▼                    ▼                    ▼
+┌──────────┐        ┌──────────┐        ┌──────────┐
+│ DETECTIVE│───────►│ ARCHITECT│───────►│  SCRIBE  │
+│          │        │          │        │          │
+│ Analyzes │        │ Implements│       │ Validates│
+│ patterns │        │ features  │       │ glossary │
+└──────────┘        └──────────┘        └──────────┘
+      │                   │                   │
+      ▼                   ▼                   ▼
+conventions.json    manifest.json       feature.md
+      │
+      ▼
+┌──────────┐
+│ PATTERNS │ ◄── User confirmation
+│          │
+│  Learns  │
+│  rules   │
+└──────────┘
+      │
+      ▼
+ learned.json
 ```
 
 ### Detective Agent
 
 Runs bash commands to detect your codebase conventions:
 
-
 - Language, framework, project structure
 - Formatting (editorconfig, prettier, black, etc.)
 - Code style (max line length, imports, naming)
 - Testing (pytest, jest, framework location)
 - Logging, API design, security patterns
+- **Deep library analysis**: wrappers, base classes, configuration, integration patterns
 
-Outputs `conventions.json` conforming to a JSON schema.
+Outputs `conventions.json` conforming to a JSON schema. Proposes new patterns for user confirmation when consistent usage is detected.
 
 ### Architect Agent
 
@@ -280,6 +291,17 @@ Validates and updates glossaries:
 - Verifies code anchors actually exist
 - Updates feature file glossary tables
 - Cleans up temporary manifest.json
+
+### Patterns Agent
+
+Learns and enforces project-specific patterns:
+- Deep analysis of library usage (wrappers, base classes, config)
+- Captures rules that persist across sessions
+- Proposes new patterns when Detective finds consistent usage
+- Resolves conflicts between learned patterns
+- Provides good/bad examples for each pattern
+
+Outputs `learned.json` with user-confirmed patterns that take precedence over auto-detected conventions.
 
 ### Glossary Anchors
 
@@ -312,20 +334,23 @@ Now `grep "IDD:user-auth"` finds all code for that feature across your codebase.
 
 ```
 .github/idd/
-├── compile.sh              # Orchestrates compilation
+├── compile.sh              # CLI orchestrator
 ├── orchestrator.md         # Main workflow coordinator
 ├── conventions.json        # Detected patterns (auto-generated)
 ├── state.json              # Session state (auto-generated)
 ├── hooks.config            # Git hooks configuration
 ├── agents/
-│   ├── detective.md        # Pattern detection specialist
+│   ├── detective.md        # Pattern detection + library analysis
 │   ├── architect.md        # Code implementation specialist
 │   ├── scribe.md           # Glossary validation specialist
-│   └── patterns.md         # Pattern learning specialist
+│   └── patterns.md         # Pattern learning + confirmation
 ├── hooks/
 │   ├── pre-commit          # Git pre-commit hook
-│   ├── glossary_check.py   # Anchor validation
-│   └── pattern_check.py    # Pattern compliance
+│   ├── glossary-check      # Anchor validation wrapper
+│   ├── glossary_check.py   # Anchor validation logic
+│   ├── pattern-check       # Pattern compliance wrapper
+│   ├── pattern_check.py    # Pattern compliance logic
+│   └── validate_json.py    # JSON schema validation
 ├── patterns/
 │   ├── learned.json        # User-confirmed patterns
 │   ├── overrides.json      # Convention overrides
@@ -333,13 +358,14 @@ Now `grep "IDD:user-auth"` finds all code for that feature across your codebase.
 ├── schemas/
 │   ├── conventions.schema.json   # Detective output schema
 │   ├── manifest.schema.json      # Architect output schema
-│   └── learned.schema.json       # Learned patterns schema
+│   ├── learned.schema.json       # Learned patterns schema
+│   └── overrides.schema.json     # User overrides schema
 └── features/
     ├── general.md          # Default cross-feature context
     └── _template.md        # Copy for new features
 ```
 
-**~10 files. Specialized agents with JSON schema contracts.**
+**4 specialized agents with JSON schema contracts.**
 
 ## FAQ
 
