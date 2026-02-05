@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IDD_VERSION="2.1.0"
+IDD_VERSION="3.0.0"
 IDD_DIR="$(cd "$(dirname "$0")" && pwd)"
 IDD_ROOT="$(cd "$IDD_DIR/../.." && pwd)"
 
@@ -18,519 +18,22 @@ usage() {
 ${BOLD}idd${NC} v${IDD_VERSION} — Intent-Driven Development
 
 ${BOLD}Usage:${NC}
-  idd init           Detect conventions, scaffold files, copy to tool locations
-  idd detect         Re-detect codebase conventions → conventions.json
+  idd init           Scaffold files, copy instructions to AI tool locations
   idd learn <rule>   Add a learned rule to learned.json
 
 ${BOLD}Files:${NC}
-  .github/idd/conventions.json    Auto-detected codebase conventions
+  .github/idd/conventions.json    Project conventions (AI-populated per schema)
   .github/idd/learned.json        Human-confirmed rules
   .github/idd/instructions.md     AI reads this (copied to tool locations)
   .github/idd/features/*.md       Feature specs (AI reads directly)
 
+${BOLD}How detection works:${NC}
+  Your AI tool reads instructions.md on every session.
+  If conventions.json has "status": "pending", the AI analyzes
+  your codebase and populates it following the schema.
+  No bash heuristics — the LLM reads your actual code.
+
 EOF
-}
-
-# ─────────────────────────────────────────────────────────
-#  json helper — all JSON output goes through python3
-#  to avoid heredoc/quoting fragility
-# ─────────────────────────────────────────────────────────
-write_json() {
-  python3 -c "
-import json, sys
-
-data = json.loads(sys.stdin.read())
-with open(sys.argv[1], 'w') as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
-    f.write('\n')
-" "$1"
-}
-
-# ─────────────────────────────────────────────────────────
-#  detect_project — detect conventions for a single project
-#  arg 1: directory to analyze (absolute path)
-#  outputs: JSON object to stdout
-# ─────────────────────────────────────────────────────────
-detect_project() {
-  local dir="$1"
-  local lang="" framework="" pkg_mgr=""
-  local indent="" quotes="" line_length="" fmt_source="fallback" fmt_config=""
-  local test_fw="" test_loc="" test_naming=""
-  local log_lib="" log_style=""
-  local func_naming="" class_naming="" file_naming=""
-  local import_style="" import_grouping=""
-  local err_pattern="" err_evidence=""
-  local comp_models="" comp_enums="" comp_services=""
-  local warnings=""
-
-  cd "$dir"
-
-  # --- Language & framework ---
-  if [[ -f Package.swift ]] || ls *.xcodeproj 2>/dev/null | head -1 | grep -q . || ls *.xcworkspace 2>/dev/null | head -1 | grep -q .; then
-    lang="swift"; pkg_mgr="spm"
-    [[ -f Podfile ]] && pkg_mgr="cocoapods"
-    if grep -rq "import SwiftUI" --include="*.swift" . 2>/dev/null; then
-      framework="swiftui"
-    elif grep -rq "import UIKit" --include="*.swift" . 2>/dev/null; then
-      framework="uikit"
-    fi
-  elif [[ -f pyproject.toml ]] || [[ -f setup.py ]] || [[ -f requirements.txt ]]; then
-    lang="python"
-    grep -q "fastapi" pyproject.toml requirements.txt 2>/dev/null && framework="fastapi" || true
-    grep -q "django" pyproject.toml requirements.txt 2>/dev/null && framework="${framework:-django}" || true
-    grep -q "flask" pyproject.toml requirements.txt 2>/dev/null && framework="${framework:-flask}" || true
-    if [[ -f pyproject.toml ]]; then
-      grep -q "\[tool.poetry\]" pyproject.toml 2>/dev/null && pkg_mgr="poetry" || true
-      grep -q "\[project\]" pyproject.toml 2>/dev/null && [[ -z "$pkg_mgr" ]] && pkg_mgr="pip" || true
-      [[ -z "$pkg_mgr" ]] && pkg_mgr="pip"
-    else
-      pkg_mgr="pip"
-    fi
-  elif [[ -f package.json ]]; then
-    lang="typescript"
-    [[ -f tsconfig.json ]] || lang="javascript"
-    grep -q '"next"' package.json 2>/dev/null && framework="nextjs" || true
-    grep -q '"express"' package.json 2>/dev/null && framework="${framework:-express}" || true
-    grep -q '"react"' package.json 2>/dev/null && [[ -z "$framework" ]] && framework="react" || true
-    grep -q '"vue"' package.json 2>/dev/null && framework="${framework:-vue}" || true
-    if [[ -f pnpm-lock.yaml ]]; then pkg_mgr="pnpm"
-    elif [[ -f yarn.lock ]]; then pkg_mgr="yarn"
-    elif [[ -f bun.lockb ]]; then pkg_mgr="bun"
-    else pkg_mgr="npm"; fi
-  elif [[ -f go.mod ]]; then
-    lang="go"; pkg_mgr="go mod"
-    grep -q "gin-gonic" go.mod 2>/dev/null && framework="gin" || true
-    grep -q "labstack/echo" go.mod 2>/dev/null && framework="${framework:-echo}" || true
-  elif [[ -f Cargo.toml ]]; then
-    lang="rust"; pkg_mgr="cargo"
-    grep -q "actix" Cargo.toml 2>/dev/null && framework="actix" || true
-    grep -q "axum" Cargo.toml 2>/dev/null && framework="${framework:-axum}" || true
-  elif [[ -f build.gradle ]] || [[ -f build.gradle.kts ]] || [[ -f pom.xml ]]; then
-    lang="java"; pkg_mgr="gradle"
-    [[ -f pom.xml ]] && pkg_mgr="maven"
-    grep -rq "spring" build.gradle build.gradle.kts pom.xml 2>/dev/null && framework="spring" || true
-  fi
-
-  # --- Formatting ---
-  if [[ -f .editorconfig ]]; then
-    fmt_source="config"; fmt_config=".editorconfig"
-    local raw_indent; raw_indent=$(grep "indent_size" .editorconfig 2>/dev/null | head -1 | sed 's/.*= *//')
-    local indent_style; indent_style=$(grep "indent_style" .editorconfig 2>/dev/null | head -1 | sed 's/.*= *//')
-    [[ "$indent_style" == "tab" ]] && indent="tabs" || indent="${raw_indent:-4} spaces"
-  fi
-  if [[ -z "$indent" && -f pyproject.toml ]]; then
-    local bl; bl=$(grep -A5 "\[tool.black\]" pyproject.toml 2>/dev/null | grep "line.length" | sed 's/.*= *//')
-    [[ -n "$bl" ]] && line_length="$bl" && fmt_source="config" && fmt_config="pyproject.toml"
-    local rl; rl=$(grep -A5 "\[tool.ruff\]" pyproject.toml 2>/dev/null | grep "line-length" | sed 's/.*= *//')
-    [[ -n "$rl" ]] && line_length="$rl" && fmt_source="config" && fmt_config="pyproject.toml"
-  fi
-  if [[ -z "$indent" ]] && ls .prettierrc* 2>/dev/null | head -1 | grep -q .; then
-    fmt_source="config"; fmt_config=$(ls .prettierrc* 2>/dev/null | head -1)
-    local tw; tw=$(grep -o '"tabWidth"[[:space:]]*:[[:space:]]*[0-9]*' "$fmt_config" 2>/dev/null | grep -o '[0-9]*')
-    [[ -n "$tw" ]] && indent="${tw} spaces"
-    grep -q '"singleQuote"[[:space:]]*:[[:space:]]*true' "$fmt_config" 2>/dev/null && quotes="single" || true
-  fi
-  if [[ -z "$indent" ]] && [[ -f .swiftformat ]]; then
-    fmt_source="config"; fmt_config=".swiftformat"
-    local si; si=$(grep "indentation" .swiftformat 2>/dev/null | head -1 | sed 's/.*indentation *//')
-    [[ -n "$si" ]] && indent="$si"
-  fi
-  if [[ -z "$indent" ]]; then
-    local ext_glob="*.py"
-    case "$lang" in
-      typescript|javascript) ext_glob="*.ts -o -name *.js" ;;
-      swift) ext_glob="*.swift" ;;
-      go) ext_glob="*.go" ;;
-      rust) ext_glob="*.rs" ;;
-      java) ext_glob="*.java" ;;
-    esac
-    local sample; sample=$(find . -maxdepth 4 \( -name $ext_glob \) ! -path "*/node_modules/*" ! -path "*/__pycache__/*" ! -path "*/.git/*" ! -path "*/.build/*" ! -path "*/build/*" 2>/dev/null | head -1)
-    if [[ -n "$sample" ]]; then
-      local leading; leading=$(grep -m5 "^  " "$sample" 2>/dev/null | head -1)
-      if [[ -n "$leading" ]]; then
-        local spaces; spaces=$(echo "$leading" | sed 's/[^ ].*//' | wc -c)
-        spaces=$((spaces - 1))
-        [[ $spaces -gt 0 ]] && indent="${spaces} spaces" && fmt_source="inferred"
-      fi
-    fi
-  fi
-
-  # Language-aware defaults
-  case "$lang" in
-    python)
-      [[ -z "$indent" ]] && indent="4 spaces"
-      [[ -z "$quotes" ]] && quotes="double"
-      [[ -z "$line_length" ]] && line_length="88"
-      ;;
-    typescript|javascript)
-      [[ -z "$indent" ]] && indent="2 spaces"
-      [[ -z "$quotes" ]] && quotes="single"
-      [[ -z "$line_length" ]] && line_length="100"
-      ;;
-    swift)
-      [[ -z "$indent" ]] && indent="4 spaces"
-      [[ -z "$quotes" ]] && quotes="double"
-      [[ -z "$line_length" ]] && line_length="120"
-      ;;
-    go)
-      [[ -z "$indent" ]] && indent="tabs"
-      [[ -z "$quotes" ]] && quotes="double"
-      [[ -z "$line_length" ]] && line_length="120"
-      ;;
-    *)
-      [[ -z "$indent" ]] && indent="4 spaces"
-      [[ -z "$quotes" ]] && quotes="double"
-      [[ -z "$line_length" ]] && line_length="100"
-      ;;
-  esac
-
-  # --- Naming conventions ---
-  case "$lang" in
-    python)     func_naming="snake_case"; class_naming="PascalCase"; file_naming="snake_case" ;;
-    swift)      func_naming="camelCase";  class_naming="PascalCase"; file_naming="PascalCase" ;;
-    go)         func_naming="camelCase";  class_naming="PascalCase"; file_naming="snake_case" ;;
-    rust)       func_naming="snake_case"; class_naming="PascalCase"; file_naming="snake_case" ;;
-    java)       func_naming="camelCase";  class_naming="PascalCase"; file_naming="PascalCase" ;;
-    *)          func_naming="camelCase";  class_naming="PascalCase"; file_naming="camelCase"  ;;
-  esac
-
-  # --- Testing ---
-  if [[ -f pytest.ini || -f conftest.py ]] || grep -q "pytest" pyproject.toml 2>/dev/null; then
-    test_fw="pytest"; test_loc="tests/"; test_naming="test_{module}_{behavior}"
-  elif ls jest.config.* 2>/dev/null | head -1 | grep -q . || ([[ -f package.json ]] && grep -q '"jest"' package.json 2>/dev/null); then
-    test_fw="jest"; test_loc="__tests__/ or *.test.ts"; test_naming="describe/it"
-  elif ls vitest.config.* 2>/dev/null | head -1 | grep -q .; then
-    test_fw="vitest"; test_loc="*.test.ts"; test_naming="describe/it"
-  elif [[ "$lang" == "go" ]]; then
-    test_fw="go test"; test_loc="*_test.go"; test_naming="Test{Function}"
-  elif [[ "$lang" == "swift" ]]; then
-    if find . -maxdepth 4 -name "*Tests.swift" -o -name "*Test.swift" 2>/dev/null | head -1 | grep -q .; then
-      test_fw="XCTest"; test_loc="Tests/"; test_naming="test{Behavior}"
-    fi
-  elif [[ "$lang" == "java" ]]; then
-    test_fw="junit"; test_loc="src/test/"; test_naming="test{Behavior}"
-  fi
-
-  # --- Logging ---
-  if [[ "$lang" == "python" ]]; then
-    if grep -rq "structlog\|from structlog" --include="*.py" . 2>/dev/null; then
-      log_lib="structlog"; log_style="structured"
-    elif grep -rq "import logging" --include="*.py" . 2>/dev/null; then
-      log_lib="logging"; log_style="formatted"
-    fi
-  elif [[ "$lang" == "typescript" || "$lang" == "javascript" ]]; then
-    if grep -rq "winston\|pino" --include="*.ts" --include="*.js" . 2>/dev/null; then
-      log_lib=$(grep -roh "winston\|pino" --include="*.ts" --include="*.js" . 2>/dev/null | head -1)
-      log_style="structured"
-    fi
-  elif [[ "$lang" == "swift" ]]; then
-    if grep -rq "import os\|os\.Logger\|Logger(" --include="*.swift" . 2>/dev/null; then
-      log_lib="os.Logger"; log_style="structured"
-    fi
-  fi
-
-  # --- Centralized components (as objects with location key) ---
-  comp_models=$(find . -maxdepth 4 -type d -name "models" -o -name "Models" ! -path "*/node_modules/*" ! -path "*/__pycache__/*" ! -path "*/.build/*" 2>/dev/null | head -1 | sed "s|^\./||")
-  comp_enums=$(find . -maxdepth 4 -type d \( -name "enums" -o -name "Enums" -o -name "constants" -o -name "Constants" -o -name "types" -o -name "Types" \) ! -path "*/node_modules/*" ! -path "*/.build/*" 2>/dev/null | head -1 | sed "s|^\./||")
-  comp_services=$(find . -maxdepth 4 -type d \( -name "services" -o -name "Services" -o -name "clients" -o -name "Clients" \) ! -path "*/node_modules/*" ! -path "*/.build/*" 2>/dev/null | head -1 | sed "s|^\./||")
-
-  # --- Import style ---
-  if [[ "$lang" == "python" ]]; then
-    local abs_count; abs_count=$(grep -rc "^from [a-zA-Z]" --include="*.py" . 2>/dev/null | grep -v ":0$" | wc -l | tr -d ' ')
-    local rel_count; rel_count=$(grep -rc "^from \." --include="*.py" . 2>/dev/null | grep -v ":0$" | wc -l | tr -d ' ')
-    abs_count=${abs_count:-0}; rel_count=${rel_count:-0}
-    if [[ "$abs_count" -gt "$rel_count" ]]; then import_style="absolute"
-    elif [[ "$rel_count" -gt "$abs_count" ]]; then import_style="relative"
-    else import_style="mixed"; fi
-    import_grouping="stdlib, third-party, local"
-  elif [[ "$lang" == "swift" ]]; then
-    import_style="absolute"; import_grouping="system, third-party, local"
-  elif [[ "$lang" == "go" ]]; then
-    import_style="absolute"; import_grouping="stdlib, third-party, local"
-  fi
-
-  # --- Error handling ---
-  case "$lang" in
-    python)     err_pattern="try/except"     ;;
-    swift)      err_pattern="do/catch"       ;;
-    go)         err_pattern="if err != nil"  ;;
-    rust)       err_pattern="Result type"    ;;
-    java)       err_pattern="try/catch"      ;;
-    *)          err_pattern="try/catch"      ;;
-  esac
-
-  # --- Emit JSON via python3 for safety ---
-  python3 <<PYEOF
-import json, sys
-
-project = {
-    "language": "${lang:-unknown}",
-    "framework": $(if [[ -n "$framework" ]]; then echo "\"$framework\""; else echo "None"; fi),
-    "package_manager": $(if [[ -n "$pkg_mgr" ]]; then echo "\"$pkg_mgr\""; else echo "None"; fi),
-    "formatting": {
-        "indent": "$indent",
-        "quotes": "$quotes",
-        "line_length": ${line_length:-100},
-        "source": "$fmt_source",
-    },
-    "style": {
-        "naming": {
-            "functions": "$func_naming",
-            "classes": "$class_naming",
-            "files": "$file_naming",
-        },
-        "error_handling": {
-            "pattern": "$err_pattern",
-        },
-        "imports": $(if [[ -n "$import_style" ]]; then echo "{\"style\": \"$import_style\", \"grouping\": \"$import_grouping\"}"; else echo "None"; fi),
-    },
-    "testing": $(if [[ -n "$test_fw" ]]; then echo "{\"framework\": \"$test_fw\", \"location\": \"$test_loc\", \"naming\": \"$test_naming\"}"; else echo "None"; fi),
-    "logging": $(if [[ -n "$log_lib" ]]; then echo "{\"library\": \"$log_lib\", \"style\": \"$log_style\"}"; else echo "None"; fi),
-    "centralized_components": {
-        "models": $(if [[ -n "$comp_models" ]]; then echo "{\"location\": \"$comp_models\"}"; else echo "None"; fi),
-        "enums": $(if [[ -n "$comp_enums" ]]; then echo "{\"location\": \"$comp_enums\"}"; else echo "None"; fi),
-        "services": $(if [[ -n "$comp_services" ]]; then echo "{\"location\": \"$comp_services\"}"; else echo "None"; fi),
-    },
-}
-
-# Python None → JSON null via json.dumps
-print(json.dumps(project))
-PYEOF
-}
-
-# ─────────────────────────────────────────────────────────
-#  discover_projects — find project roots in workspace
-#  outputs: one directory path per line
-# ─────────────────────────────────────────────────────────
-discover_projects() {
-  local root="$1"
-  local manifests=()
-
-  # Collect manifest files up to depth 3
-  while IFS= read -r f; do
-    manifests+=("$f")
-  done < <(find "$root" -maxdepth 3 \
-    \( -name "pyproject.toml" \
-    -o -name "setup.py" \
-    -o -name "package.json" \
-    -o -name "go.mod" \
-    -o -name "Cargo.toml" \
-    -o -name "Package.swift" \
-    -o -name "build.gradle" \
-    -o -name "build.gradle.kts" \
-    -o -name "pom.xml" \
-    -o -name "requirements.txt" \) \
-    ! -path "*/node_modules/*" \
-    ! -path "*/.build/*" \
-    ! -path "*/build/*" \
-    ! -path "*/.git/*" \
-    2>/dev/null | sort)
-
-  # Also find xcodeproj dirs
-  while IFS= read -r f; do
-    # dirname of .xcodeproj is the project root
-    manifests+=("$f/dummy")
-  done < <(find "$root" -maxdepth 3 -name "*.xcodeproj" -type d \
-    ! -path "*/.git/*" 2>/dev/null | sort)
-
-  # Deduplicate by parent directory, prefer shallowest
-  if [[ ${#manifests[@]} -eq 0 ]]; then return; fi
-  local seen_dirs=()
-  for m in "${manifests[@]}"; do
-    local d; d=$(dirname "$m")
-    # Normalize
-    d=$(cd "$d" && pwd)
-    # Skip if this dir is a child of an already-seen dir
-    local dominated=false
-    if [[ ${#seen_dirs[@]} -gt 0 ]]; then
-      for s in "${seen_dirs[@]}"; do
-        if [[ "$d" == "$s" ]]; then dominated=true; break; fi
-        if [[ "$d" == "$s"/* ]]; then dominated=true; break; fi
-      done
-    fi
-    if ! $dominated; then
-      # Remove any previously-seen dirs that are children of this one
-      local new_seen=()
-      for s in "${seen_dirs[@]+${seen_dirs[@]}}"; do
-        [[ "$s" != "$d"/* ]] && new_seen+=("$s")
-      done
-      new_seen+=("$d")
-      seen_dirs=("${new_seen[@]}")
-    fi
-  done
-
-  for d in "${seen_dirs[@]+${seen_dirs[@]}}"; do
-    echo "$d"
-  done
-}
-
-# ─────────────────────────────────────────────────────────
-#  manifest_file — find the primary manifest in a dir
-# ─────────────────────────────────────────────────────────
-manifest_file() {
-  local d="$1"
-  for f in Package.swift pyproject.toml package.json go.mod Cargo.toml build.gradle pom.xml requirements.txt; do
-    if [[ -f "$d/$f" ]]; then echo "$f"; return; fi
-  done
-  # xcodeproj
-  local xc; xc=$(ls "$d"/*.xcodeproj 2>/dev/null | head -1)
-  if [[ -n "$xc" ]]; then echo "$(basename "$xc")"; return; fi
-  echo "unknown"
-}
-
-# ─────────────────────────────────────────────────────────
-#  cmd_detect — main detect entry point
-# ─────────────────────────────────────────────────────────
-cmd_detect() {
-  cd "$IDD_ROOT"
-  echo -e "${CYAN}Detecting conventions...${NC}"
-
-  # Discover project roots
-  local project_dirs=()
-  while IFS= read -r d; do
-    project_dirs+=("$d")
-  done < <(discover_projects "$IDD_ROOT")
-
-  local out="$IDD_DIR/conventions.json"
-
-  # --- Single project (root is the project or exactly one subdir) ---
-  if [[ ${#project_dirs[@]} -eq 0 ]]; then
-    # No manifests found — run detection on root with fallbacks
-    echo -e "  ${YELLOW}No project manifests found — using fallback detection${NC}"
-    local proj_json; proj_json=$(detect_project "$IDD_ROOT")
-
-    python3 <<PYEOF | write_json "$out"
-import json, sys
-
-project = json.loads('''$proj_json''')
-project["idd_version"] = "$IDD_VERSION"
-
-import datetime
-project["detected_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-project["warnings"] = [{"code": "NO_MANIFEST", "message": "No project manifests found at root or in subdirectories", "suggestion": "Run idd detect from within a project directory or add a manifest file"}]
-
-print(json.dumps(project))
-PYEOF
-
-    echo -e "${GREEN}✓${NC} Wrote ${out#$IDD_ROOT/}"
-    echo -e "  Language: ${BOLD}unknown${NC} (no manifest found)"
-
-  elif [[ ${#project_dirs[@]} -eq 1 ]]; then
-    # Single project
-    local d="${project_dirs[0]}"
-    local proj_json; proj_json=$(detect_project "$d")
-    local rel_path; rel_path=$(python3 -c "import os; print(os.path.relpath('$d', '$IDD_ROOT'))")
-
-    python3 <<PYEOF | write_json "$out"
-import json, datetime
-
-project = json.loads('''$proj_json''')
-project["idd_version"] = "$IDD_VERSION"
-project["detected_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-# If project is in a subdir, note the path
-if "$rel_path" != ".":
-    project["project_root"] = "$rel_path"
-
-print(json.dumps(project))
-PYEOF
-
-    local lang; lang=$(echo "$proj_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('language','unknown'))")
-    local fw; fw=$(echo "$proj_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('framework') or '')")
-
-    echo -e "${GREEN}✓${NC} Wrote ${out#$IDD_ROOT/}"
-    echo -e "  Language: ${BOLD}${lang}${NC}"
-    [[ -n "$fw" ]] && echo -e "  Framework: ${BOLD}${fw}${NC}" || true
-
-  else
-    # --- Multi-project workspace ---
-    echo -e "  ${CYAN}Found ${#project_dirs[@]} projects${NC}"
-
-    # Detect each project
-    local packages_json="["
-    local first=true
-    local primary_lang=""
-
-    for d in "${project_dirs[@]}"; do
-      local proj_json; proj_json=$(detect_project "$d")
-      local rel_path; rel_path=$(python3 -c "import os; print(os.path.relpath('$d', '$IDD_ROOT'))")
-      local name; name=$(basename "$d")
-      local mf; mf=$(manifest_file "$d")
-      local lang; lang=$(echo "$proj_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('language','unknown'))")
-      local fw; fw=$(echo "$proj_json" | python3 -c "import json,sys; v=json.load(sys.stdin).get('framework'); print(v if v else 'null')")
-
-      [[ -z "$primary_lang" ]] && primary_lang="$lang"
-
-      $first || packages_json+=","
-      first=false
-
-      packages_json+=$(python3 <<PYPKG
-import json
-pkg = {
-    "name": "$name",
-    "path": "$rel_path",
-    "language": "$lang",
-    "framework": $(if [[ "$fw" != "null" ]]; then echo "\"$fw\""; else echo "None"; fi),
-    "package_file": "$rel_path/$mf",
-    "conventions": json.loads('''$proj_json'''),
-}
-print(json.dumps(pkg))
-PYPKG
-)
-
-      echo -e "  ${GREEN}✓${NC} ${BOLD}${name}${NC} — ${lang}$(if [[ "$fw" != "null" ]]; then echo "/$fw"; fi) (${rel_path})"
-    done
-    packages_json+="]"
-
-    # Find shared configs at root
-    local shared_configs="[]"
-    local configs=()
-    [[ -f "$IDD_ROOT/.editorconfig" ]] && configs+=(".editorconfig")
-    [[ -f "$IDD_ROOT/.gitignore" ]] && configs+=(".gitignore")
-    ls "$IDD_ROOT"/.prettierrc* 2>/dev/null | head -1 | grep -q . && configs+=(".prettierrc") || true
-    [[ -f "$IDD_ROOT/tsconfig.json" ]] && configs+=("tsconfig.json")
-    if [[ ${#configs[@]} -gt 0 ]]; then
-      shared_configs=$(printf '%s\n' "${configs[@]}" | python3 -c "import json,sys; print(json.dumps([l.strip() for l in sys.stdin]))")
-    fi
-
-    # Assemble final output
-    python3 <<PYEOF | write_json "$out"
-import json, datetime
-
-packages = json.loads('''$packages_json''')
-primary = packages[0]["conventions"] if packages else {}
-
-output = {
-    "idd_version": "$IDD_VERSION",
-    "detected_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "language": "$primary_lang",
-    "framework": primary.get("framework"),
-    "package_manager": primary.get("package_manager"),
-    "formatting": primary.get("formatting", {}),
-    "style": primary.get("style", {}),
-    "testing": primary.get("testing"),
-    "logging": primary.get("logging"),
-    "centralized_components": primary.get("centralized_components", {}),
-    "monorepo": {
-        "type": "custom",
-        "packages": packages,
-        "shared_configs": json.loads('''$shared_configs'''),
-        "per_package_detection_needed": False,
-    },
-    "warnings": [{
-        "code": "MULTI_PROJECT_WORKSPACE",
-        "message": f"Detected {len(packages)} projects: " + ", ".join(f"{p['path']} ({p['language']})" for p in packages),
-        "suggestion": "Scope work to the relevant project. Each package in monorepo.packages has its own conventions.",
-    }],
-}
-
-print(json.dumps(output))
-PYEOF
-
-    echo -e "${GREEN}✓${NC} Wrote ${out#$IDD_ROOT/}"
-    echo -e "  ${BOLD}Multi-project workspace${NC} — ${#project_dirs[@]} projects detected"
-  fi
 }
 
 # ─────────────────────────────────────────────────────────
@@ -580,7 +83,7 @@ PYEOF
 }
 
 # ─────────────────────────────────────────────────────────
-#  init — scaffold + detect + copy to tool locations
+#  init — scaffold files + copy instructions to tool locations
 # ─────────────────────────────────────────────────────────
 cmd_init() {
   cd "$IDD_ROOT"
@@ -595,13 +98,30 @@ cmd_init() {
     echo -e "${GREEN}✓${NC} Created learned.json"
   fi
 
-  # 3. Copy feature template if missing
+  # 3. Bootstrap conventions.json if missing
+  if [[ ! -f "$IDD_DIR/conventions.json" ]]; then
+    python3 -c "
+import json
+data = {
+    'idd_version': '$IDD_VERSION',
+    'status': 'pending',
+    'detected_at': None,
+    'schema': '.github/idd/schemas/conventions.schema.json',
+    'message': 'AI will populate this on first session. See instructions.md.'
+}
+with open('$IDD_DIR/conventions.json', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+"
+    echo -e "${GREEN}✓${NC} Created conventions.json (status: pending — AI will populate)"
+  else
+    echo -e "${CYAN}ℹ${NC} conventions.json already exists"
+  fi
+
+  # 4. Copy feature template if missing
   if [[ ! -f "$IDD_DIR/features/_template.md" ]]; then
     echo -e "${YELLOW}⚠${NC} features/_template.md not found — download from github.com/dan1hc/idd"
   fi
-
-  # 4. Run detection
-  cmd_detect
 
   # 5. Copy instructions.md to tool-native locations
   local src="$IDD_DIR/instructions.md"
@@ -627,7 +147,11 @@ cmd_init() {
 
   echo ""
   echo -e "${GREEN}Done.${NC} Instructions placed in ${copied} tool location(s)."
-  echo -e "Next: create a feature file in ${BOLD}.github/idd/features/${NC} and start coding."
+  echo ""
+  echo -e "Next steps:"
+  echo -e "  1. Open your AI tool (Cursor, Claude Code, or Copilot)"
+  echo -e "  2. Prompt: \"Populate conventions.json for this project.\""
+  echo -e "  3. Start building — the AI will follow your project's conventions"
 }
 
 # ─────────────────────────────────────────────────────────
@@ -635,7 +159,6 @@ cmd_init() {
 # ─────────────────────────────────────────────────────────
 case "${1:-}" in
   init)    cmd_init ;;
-  detect)  cmd_detect ;;
   learn)   shift; cmd_learn "$@" ;;
   -h|--help|help|"")  usage ;;
   -v|--version)       echo "idd v${IDD_VERSION}" ;;

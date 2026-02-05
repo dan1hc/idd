@@ -8,9 +8,16 @@ AI coding assistants start every session with zero context about your project.
 They guess at formatting, create duplicate components, ignore your library wrappers,
 and produce code that *works* but doesn't *fit*.
 
-## How IDD Fixes It
+## How It Works
 
-IDD detects your project's conventions and puts them where AI tools already look:
+### 1. Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash
+```
+
+This scaffolds the IDD file tree and copies `instructions.md` to where AI tools
+already look:
 
 | Tool | Reads from |
 |------|-----------|
@@ -18,151 +25,76 @@ IDD detects your project's conventions and puts them where AI tools already look
 | Claude Code | `CLAUDE.md` |
 | GitHub Copilot | `.github/copilot-instructions.md` |
 
-One set of instructions, automatically copied to all three locations.
+### 2. Populate conventions
 
-## Install
+Open Cursor, Claude Code, or GitHub Copilot and prompt:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash
+```
+Populate conventions.json for this project.
 ```
 
-Or use as a template:
+The AI reads `instructions.md` (already in place from step 1), reads the
+schema, reads your actual code — manifest files, configs, source files —
+and writes `conventions.json`. No bash heuristics. The LLM understands
+your code, so it captures things a script never could: library wrappers,
+integration patterns, API conventions. Works for monorepos too.
 
-```bash
-gh repo create my-project --template dan1hc/idd
+You do this **once**. Every session after, the AI reads the populated
+conventions automatically.
+
+### 3. Build features
+
+Prompt your AI tool with what you want to build:
+
+```
+Add a POST /users endpoint with input validation.
 ```
 
-## Usage
+The AI reads your conventions + learned rules, creates a feature spec,
+writes code that matches your project's patterns, and updates the feature
+glossary so the next session knows what exists.
 
-### 3 Commands
+## Teaching Rules
+
+Some things can't be detected — they're decisions your team made. Teach them:
 
 ```bash
-# First time — detect conventions, copy instructions to tool locations
-.github/idd/idd init
-
-# Re-detect after changing formatters, linters, or project structure
-.github/idd/idd detect
-
-# Teach a project rule (persists across sessions)
 .github/idd/idd learn "Always use BaseClient from src/clients/base.py, never raw httpx"
+.github/idd/idd learn "Services must not import from routes — dependency goes one way"
 ```
 
-### The Loop
-
-```
-1. Create a feature spec    →  cp _template.md features/my-feature.md
-2. Open your AI tool         →  Cursor, Claude Code, Copilot — any of them
-3. AI reads instructions     →  conventions.json + learned.json + feature spec
-4. AI writes matching code   →  follows your formatting, naming, patterns
-5. AI updates the glossary   →  feature file tracks what was built where
-```
-
-No compilation step. No agent orchestration. Your AI tool reads
-`instructions.md` natively and does the right thing.
-
-## What Gets Detected
-
-`idd detect` analyzes your codebase and writes `conventions.json`:
-
-- **Language & framework** — Python/FastAPI, TypeScript/Next.js, Swift/SwiftUI, Go/Gin, Java/Spring, Rust, etc.
-- **Formatting** — indent, quotes, line length (from config files or inferred)
-- **Naming** — functions, classes, files
-- **Testing** — framework, location, naming convention
-- **Logging** — library, structured vs formatted
-- **Components** — where models, enums, services, clients live
-
-## Multi-Project Workspaces
-
-`idd detect` auto-discovers projects in subdirectories. If your workspace
-contains a Python API and a Swift iOS app, both get detected:
-
-```
-my-workspace/
-├── api/          ← Python/FastAPI detected
-├── ios/          ← Swift/SwiftUI detected
-└── .github/idd/
-    └── conventions.json   ← monorepo.packages[] has both
-```
-
-No flags needed — IDD finds manifests (`pyproject.toml`, `Package.swift`,
-`package.json`, `go.mod`, `Cargo.toml`, `build.gradle`, `pom.xml`) up to
-three directories deep and scopes detection per project.
-
-## What Gets Learned
-
-`idd learn` saves rules that detection can't capture:
-
-```bash
-idd learn "All models must inherit from AppBaseModel in src/models/base.py"
-idd learn "Use selectinload() for relationships, never lazy loading"
-idd learn "Services must not import from routes — dependency goes one way"
-```
-
-Rules are stored as plain natural language in `learned.json`:
-
-```json
-{
-  "rules": [
-    { "id": 1, "rule": "All models must inherit from AppBaseModel", "added": "2026-02-05" },
-    { "id": 2, "rule": "Use selectinload() for relationships", "added": "2026-02-05" }
-  ]
-}
-```
+Rules persist in `learned.json` and take precedence over detected conventions.
 
 ## Feature Specs
 
-Feature files are plain markdown in `.github/idd/features/`. Each one has:
+Feature files live in `.github/idd/features/`. Each one has acceptance criteria,
+constraints, and a **glossary** — a table of `file::symbol` anchors that records
+what was built where. The glossary is how AI remembers across sessions.
 
-- **What** — one sentence describing the feature
-- **Acceptance criteria** — testable checkboxes
-- **Constraints** — edge cases, out-of-scope items
-- **Glossary** — populated after implementation with `file::symbol` anchors
+Tell your AI tool to create a feature spec when starting new work.
 
-The glossary is how AI remembers what was built. Next session, it reads the
-glossary and knows where to find (and modify) existing code instead of creating duplicates.
+## Refreshing Conventions
 
-Copy the template to start:
+After changing formatters, linters, or project structure, prompt:
 
-```bash
-cp .github/idd/features/_template.md .github/idd/features/user-auth.md
+```
+Refresh conventions.json.
 ```
 
 ## File Tree
 
 ```
 .github/idd/
-├── idd                              # CLI (init, detect, learn)
-├── instructions.md                  # AI reads this (copied to tool locations)
-├── conventions.json                 # Auto-detected project conventions
-├── learned.json                     # Human-confirmed rules
+├── idd                     # CLI (init, learn)
+├── instructions.md         # copied to AI tool locations
+├── conventions.json        # project conventions (AI-populated)
+├── learned.json            # human-confirmed rules
 ├── features/
-│   ├── _template.md                 # Feature spec template
-│   └── *.md                         # Your feature specs
+│   ├── _template.md        # feature spec template
+│   └── *.md                # your feature specs
 └── schemas/
-    ├── conventions.schema.json      # Schema for conventions.json
-    └── learned.schema.json          # Schema for learned.json
+    └── conventions.schema.json
 ```
-
-Plus the tool-native copies created by `idd init`:
-
-```
-.cursorrules                         # → instructions.md (Cursor)
-CLAUDE.md                            # → instructions.md (Claude Code)
-.github/copilot-instructions.md      # → instructions.md (GitHub Copilot)
-```
-
-## How It Works
-
-1. `idd init` runs `detect` then copies `instructions.md` to tool locations.
-2. `instructions.md` tells the AI: read `conventions.json`, read `learned.json`,
-   read the feature spec, match everything when writing code.
-3. The AI follows the instructions because they're in the file it already reads
-   on every session.
-4. After implementing, the AI updates the feature's glossary with `file::symbol`
-   anchors so the next session knows what exists.
-
-No compilation. No prompt engineering. No agent pipeline. Just files in the
-places AI tools already look.
 
 ## License
 

@@ -1,3 +1,28 @@
+# [3.0.0](https://github.com/dan1hc/idd/compare/v2.1.0...v3.0.0) (2026-02-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* Bash detection removed entirely. AI populates `conventions.json` by reading the codebase directly.
+* `idd detect` command removed — only `init` and `learn` remain.
+
+
+### Features
+
+* **AI-powered convention analysis** — the AI reads your schema, manifest files, configs, and source code to populate `conventions.json`. No bash grep/find heuristics.
+* **richer conventions** — AI can now populate fields bash never could: `libraries` with usage patterns and anti-patterns, `integration_patterns`, `api` conventions, `security` patterns
+* **§0 Bootstrap** in `instructions.md` — tells the AI to check conventions.json status and populate it on first session
+* **multi-project workspaces** — AI populates `monorepo.packages` with per-project conventions by reading each project's actual code
+* **refresh on demand** — tell AI "refresh conventions" or "update conventions.json" to re-analyze
+
+
+### Removed
+
+* `idd detect` command (~500 lines of bash detection — `detect_project`, `discover_projects`, `write_json`, `manifest_file`)
+* All bash heuristics for language, framework, formatting, naming, testing, logging, and component detection
+* `cmd_detect` function and associated helpers
+
+
 # [1.4.0](https://github.com/dan1hc/idd/compare/v1.3.0...v1.4.0) (2026-02-05)
 
 

@@ -5,93 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IDD — Quick Start</title>
   <style>
-    :root { --bg: #0d1117; --fg: #c9d1d9; --accent: #58a6ff; --green: #3fb950; --border: #30363d; --surface: #161b22; }
+    :root { --bg: #0d1117; --fg: #c9d1d9; --accent: #58a6ff; --green: #3fb950; --border: #30363d; --surface: #161b22; --dim: #8b949e; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; padding: 2rem; max-width: 800px; margin: 0 auto; }
-    h1 { color: #fff; margin-bottom: 0.5rem; }
+    h1 { color: #fff; margin-bottom: 0.25rem; }
     h2 { color: var(--accent); margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
-    h3 { color: #fff; margin: 1.5rem 0 0.5rem; }
     p, li { margin-bottom: 0.5rem; }
     ul, ol { padding-left: 1.5rem; }
     code { background: var(--surface); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; }
-    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
-    pre code { background: none; padding: 0; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1rem 0; position: relative; }
+    pre code { background: none; padding: 0; user-select: all; -webkit-user-select: all; }
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .step { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
     .step-num { display: inline-block; background: var(--accent); color: var(--bg); font-weight: 700; width: 1.8rem; height: 1.8rem; text-align: center; line-height: 1.8rem; border-radius: 50%; margin-right: 0.5rem; }
-    .check { color: var(--green); }
+    .subtitle { color: var(--dim); margin-bottom: 2rem; }
     .tree { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85em; }
-    .subtitle { color: #8b949e; margin-bottom: 2rem; }
+    .dim { color: var(--dim); }
   </style>
 </head>
 <body>
 
 <h1>IDD Quick Start</h1>
-<p class="subtitle">Intent-Driven Development — make AI follow your conventions</p>
+<p class="subtitle">Make AI coding tools follow your project's conventions.</p>
 
-<h2>Install</h2>
+<h2>1. Install</h2>
 
 <pre><code>curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash</code></pre>
 
-<p>This downloads the IDD CLI, detects your project's conventions, and copies instructions to where your AI tools look.</p>
+<p>This scaffolds the IDD file tree and copies <code>instructions.md</code> to where AI tools look (<code>.cursorrules</code>, <code>CLAUDE.md</code>, <code>.github/copilot-instructions.md</code>).</p>
 
-<h2>Three Commands</h2>
+<h2>2. Populate conventions</h2>
 
-<div class="step">
-  <h3><span class="step-num">1</span> idd init</h3>
-  <p>Detect conventions and copy <code>instructions.md</code> to tool locations (<code>.cursorrules</code>, <code>CLAUDE.md</code>, <code>.github/copilot-instructions.md</code>).</p>
-  <pre><code>.github/idd/idd init</code></pre>
-</div>
+<p>Open Cursor, Claude Code, or GitHub Copilot and prompt:</p>
 
-<div class="step">
-  <h3><span class="step-num">2</span> idd detect</h3>
-  <p>Re-detect conventions after changing formatters, linters, or project structure.</p>
-  <pre><code>.github/idd/idd detect</code></pre>
-</div>
+<pre><code>Populate conventions.json for this project.</code></pre>
 
-<div class="step">
-  <h3><span class="step-num">3</span> idd learn</h3>
-  <p>Add a project rule that persists across AI sessions.</p>
-  <pre><code>.github/idd/idd learn "Always use BaseClient, never raw httpx"</code></pre>
-</div>
+<p>The AI reads your actual code — manifest files, configs, source files — and writes <code>conventions.json</code>. No bash heuristics. You do this <strong>once</strong>. Every session after, the AI reads the populated conventions automatically.</p>
 
-<h2>The Loop</h2>
+<h2>3. Build features</h2>
 
-<ol>
-  <li><strong>Create a feature spec</strong> — copy <code>_template.md</code> to <code>features/my-feature.md</code></li>
-  <li><strong>Open your AI tool</strong> — Cursor, Claude Code, or GitHub Copilot</li>
-  <li><strong>AI reads instructions</strong> — it loads conventions, learned rules, and the feature spec</li>
-  <li><strong>AI writes matching code</strong> — follows your formatting, naming, patterns</li>
-  <li><strong>AI updates the glossary</strong> — the feature file tracks what was built and where</li>
-</ol>
+<p>Prompt with what you want to build:</p>
 
-<p>No compilation. No agent orchestration. Files in the places AI already looks.</p>
+<pre><code>Add a POST /users endpoint with input validation.</code></pre>
 
-<h2>File Tree</h2>
+<p>The AI reads your conventions + learned rules, creates a feature spec, writes code that matches your project's patterns, and updates the feature glossary so the next session knows what exists.</p>
+
+<h2>Teaching project rules</h2>
+
+<p>When conventions alone aren't enough, teach explicit rules:</p>
+
+<pre><code>.github/idd/idd learn "Always use BaseClient, never raw httpx"</code></pre>
+
+<p>Rules persist in <code>learned.json</code> and take precedence over detected conventions.</p>
+
+<h2>File tree</h2>
 
 <pre class="tree"><code>.github/idd/
-├── idd                              # CLI (init, detect, learn)
-├── instructions.md                  # AI reads this
-├── conventions.json                 # Auto-detected conventions
-├── learned.json                     # Human-confirmed rules
+├── idd                     # CLI (init, learn)
+├── instructions.md         # copied to AI tool locations
+├── conventions.json        # project conventions (AI-populated)
+├── learned.json            # human-confirmed rules
 ├── features/
-│   ├── _template.md                 # Feature spec template
-│   └── *.md                         # Your feature specs
+│   ├── _template.md        # feature spec template
+│   └── *.md                # your feature specs
 └── schemas/
-    ├── conventions.schema.json      # conventions.json schema
-    └── learned.schema.json          # learned.json schema</code></pre>
-
-<h2>What Gets Detected</h2>
-
-<ul>
-  <li><span class="check">✓</span> Language &amp; framework</li>
-  <li><span class="check">✓</span> Formatting (indent, quotes, line length)</li>
-  <li><span class="check">✓</span> Naming conventions (functions, classes, files)</li>
-  <li><span class="check">✓</span> Testing (framework, location, naming)</li>
-  <li><span class="check">✓</span> Logging (library, style)</li>
-  <li><span class="check">✓</span> Centralized components (models, enums, services)</li>
-</ul>
+    └── conventions.schema.json</code></pre>
 
 <h2>Links</h2>
 

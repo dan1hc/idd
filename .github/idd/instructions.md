@@ -5,6 +5,47 @@ Read the files referenced below before writing any code.
 
 ---
 
+## §0 Bootstrap — Populate conventions.json
+
+**Check `.github/idd/conventions.json` first.**
+
+If it contains `"status": "pending"`, or is missing key fields like `language`
+or `formatting`, you must analyze the codebase and populate it before doing
+anything else.
+
+### How to populate
+
+1. Read the schema at `.github/idd/schemas/conventions.schema.json` — it defines
+   every field you can populate, including `libraries`, `integration_patterns`,
+   `api`, `security`, and `centralized_components` with inventories.
+
+2. Analyze the project:
+   - Read manifest files (`pyproject.toml`, `package.json`, `Package.swift`,
+     `go.mod`, `Cargo.toml`, `build.gradle`, `pom.xml`) for language, framework,
+     dependencies, and tooling config.
+   - Read formatter/linter configs (`.editorconfig`, `.prettierrc`, `ruff.toml`,
+     `.swiftformat`, etc.) for formatting rules.
+   - Sample 3-5 representative source files to confirm naming conventions,
+     import style, error handling patterns, and logging usage.
+   - Identify centralized component directories and list existing models,
+     enums, services, and clients by name.
+   - Identify library usage patterns — how key libraries are wrapped, configured,
+     and used. Note anti-patterns to avoid.
+
+3. Write the populated JSON back to `.github/idd/conventions.json`.
+   Remove the `"status"` and `"message"` fields. Set `"detected_at"` to now.
+
+4. For **multi-project workspaces** (multiple manifest files in subdirectories),
+   populate the `monorepo` section with a `packages` array. Each package gets
+   its own `conventions` object scoped to that subdirectory.
+
+### When to re-populate
+
+If the user says "refresh conventions", "redetect", or "update conventions.json",
+re-analyze the codebase and overwrite the file.
+
+---
+
 ## §1 Context
 
 Before making changes, load the project context:
@@ -28,8 +69,9 @@ Before making changes, load the project context:
    The feature being implemented. Contains acceptance criteria, constraints,
    dependencies, and a glossary of implemented symbols.
 
-If any of these files are missing, tell the user and suggest running `idd detect`
-or creating a feature file from `_template.md`.
+If `conventions.json` is missing or has `status: pending`, follow §0 to populate it.
+If `learned.json` is missing, suggest running `idd init`.
+If no feature spec exists for the requested work, create one from `_template.md` first.
 
 ---
 
@@ -135,61 +177,13 @@ Wait for confirmation. Never save rules without user approval.
 
 ## §5 Discovery
 
-When you need to understand the codebase, use these commands.
-These are the same techniques used by `idd detect` but available for
-deeper, ad-hoc exploration.
+When you need to understand the codebase beyond what `conventions.json` provides:
 
-### Find components
-
-```bash
-# Models / schemas
-find . -type d \( -name "models" -o -name "Models" -o -name "schemas" \) | grep -v node_modules | grep -v .build
-grep -rn "class.*BaseModel\|class.*Model\|struct.*Codable\|interface " --include="*.py" --include="*.ts" --include="*.swift" | head -20
-
-# Enums / constants
-find . -name "*enum*" -o -name "*constant*" -o -name "*Enum*" | grep -v node_modules | grep -v .build
-grep -rn "class.*Enum\|enum " --include="*.py" --include="*.ts" --include="*.swift" | head -15
-
-# Services / clients
-find . -type d \( -name "services" -o -name "Services" -o -name "clients" -o -name "Clients" \) | grep -v node_modules | grep -v .build
-grep -rn "class.*Service\|class.*Client\|struct.*Service" --include="*.py" --include="*.ts" --include="*.swift" | head -15
-```
-
-### Understand library usage
-
-```bash
-# Find how a library is used
-grep -rn "import.*{library}" --include="*.py" --include="*.ts" --include="*.swift" | head -20
-
-# Find wrapper classes
-grep -rn "class.*Client\|class.*Base\|protocol.*" --include="*.py" --include="*.ts" --include="*.swift" | head -10
-
-# Find configuration
-grep -rn "timeout\|retry\|config" --include="*.py" --include="*.ts" --include="*.swift" | head -15
-```
-
-### Understand structure
-
-```bash
-# Project layout (all languages)
-find . -maxdepth 3 -type f \( -name "*.py" -o -name "*.ts" -o -name "*.swift" -o -name "*.go" -o -name "*.java" \) | grep -v node_modules | grep -v __pycache__ | grep -v .build | head -30
-
-# Route / endpoint definitions
-grep -rn "@app\.\|@router\.\|app\.get\|app\.post\|HandleFunc" --include="*.py" --include="*.ts" --include="*.go" | head -15
-
-# Test structure
-find . -name "*test*" -o -name "*Test*" -o -name "*spec*" | grep -v node_modules | grep -v .build | head -15
-```
-
-### Check for patterns
-
-```bash
-# How are errors handled?
-grep -rn "try:\|catch\|do {\|if err.*!=.*nil\|Result<" --include="*.py" --include="*.ts" --include="*.swift" --include="*.go" | head -10
-
-# Logging pattern
-grep -rn "logger\.\|log\.\|os\.Logger\|console\." --include="*.py" --include="*.ts" --include="*.swift" | head -10
-
-# Auth / security
-grep -rn "auth\|middleware\|guard\|Depends(" --include="*.py" --include="*.ts" --include="*.swift" | head -10
-```
+1. **Read actual source files** — don't guess. Open representative files in each
+   component directory and understand how things are built.
+2. **Check centralized_components** — `conventions.json` lists locations and
+   existing inventories. Always check before creating anything new.
+3. **Check libraries** — `conventions.json` may include usage patterns,
+   wrapper locations, and anti-patterns. Follow them.
+4. **Propose rules** — if you discover a pattern not yet captured, propose it
+   to the user per §4.
