@@ -12,7 +12,7 @@ NC='\033[0m'
 BASE_URL="https://raw.githubusercontent.com/dan1hc/idd/main"
 
 echo ""
-echo -e "${BOLD}Installing IDD v2.0.0${NC}"
+echo -e "${BOLD}Installing IDD v2.1.0${NC}"
 echo ""
 
 # Create directory structure

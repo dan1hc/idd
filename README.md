@@ -64,12 +64,29 @@ No compilation step. No agent orchestration. Your AI tool reads
 
 `idd detect` analyzes your codebase and writes `conventions.json`:
 
-- **Language & framework** — Python/FastAPI, TypeScript/Next.js, Go/Gin, etc.
+- **Language & framework** — Python/FastAPI, TypeScript/Next.js, Swift/SwiftUI, Go/Gin, Java/Spring, Rust, etc.
 - **Formatting** — indent, quotes, line length (from config files or inferred)
 - **Naming** — functions, classes, files
 - **Testing** — framework, location, naming convention
 - **Logging** — library, structured vs formatted
 - **Components** — where models, enums, services, clients live
+
+## Multi-Project Workspaces
+
+`idd detect` auto-discovers projects in subdirectories. If your workspace
+contains a Python API and a Swift iOS app, both get detected:
+
+```
+my-workspace/
+├── api/          ← Python/FastAPI detected
+├── ios/          ← Swift/SwiftUI detected
+└── .github/idd/
+    └── conventions.json   ← monorepo.packages[] has both
+```
+
+No flags needed — IDD finds manifests (`pyproject.toml`, `Package.swift`,
+`package.json`, `go.mod`, `Cargo.toml`, `build.gradle`, `pom.xml`) up to
+three directories deep and scopes detection per project.
 
 ## What Gets Learned
 

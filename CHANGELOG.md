@@ -1,3 +1,31 @@
+# [2.1.0](https://github.com/dan1hc/idd/compare/v1.3.0...v2.1.0) (2026-02-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* Complete rewrite. v1 compile/agent pipeline replaced with 3-command CLI.
+
+
+### Features
+
+* **multi-project workspaces** — `idd detect` discovers project roots in subdirectories, runs per-project detection, populates `monorepo.packages` with full per-project conventions
+* **Swift detection** — Package.swift, *.xcodeproj, SwiftUI/UIKit framework, PascalCase files, do/catch errors, os.Logger, XCTest
+* **Java detection** — build.gradle, pom.xml, Spring framework, JUnit
+* **schema-conformant JSON** — `error_handling` and `imports` emitted as objects (not bare strings), `centralized_components` as objects with `location` key, `warnings` array populated
+* **safe `idd learn`** — rule passed via environment variable, no shell injection risk from quotes or special characters
+* `idd init` — detect conventions + copy instructions to AI tool locations (.cursorrules, CLAUDE.md, .github/copilot-instructions.md)
+* `idd detect` — extract conventions from codebase into conventions.json (no AI needed)
+* `idd learn` — add natural language rules with auto-incrementing IDs
+* Single `instructions.md` replaces 4 sub-agents + orchestrator — multi-project aware
+* Tool-native file placement — AI reads instructions without any compilation step
+* All JSON output via python3 to eliminate heredoc quoting fragility
+
+
+### Removed
+
+* compile.sh, sub-agents, orchestrator, hooks, patterns, v1 schemas
+
+
 # [1.3.0](https://github.com/dan1hc/idd/compare/v1.2.1...v1.3.0) (2026-02-05)
 
 

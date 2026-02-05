@@ -13,6 +13,13 @@ Before making changes, load the project context:
    Auto-detected codebase patterns (language, formatting, naming, testing, etc.).
    Match these exactly when writing new code.
 
+   **Multi-project workspaces**: If `conventions.json` has a `monorepo` section,
+   the workspace contains multiple projects. Each entry in `monorepo.packages`
+   has its own `conventions` object. Scope your work to the relevant project:
+   - Check which project directory the current file belongs to.
+   - Use that project's conventions (naming, formatting, error handling, etc.).
+   - Top-level fields reflect the primary project but may not apply to all.
+
 2. **Learned rules** — `.github/idd/learned.json`
    Human-confirmed rules that override or extend conventions.
    These take precedence over detected conventions.
@@ -34,10 +41,13 @@ Follow these rules when writing code:
 
 - Use the formatting from `conventions.json` (indent, quotes, line length).
 - Follow the naming conventions (functions, classes, files).
-- Use the project's error handling pattern.
+- Use the project's error handling pattern (e.g., `try/except` for Python, `do/catch` for Swift).
 - Follow the import style (absolute vs relative, grouping).
 - Use the project's testing framework, location, and naming convention.
 - Use the project's logging library and style.
+
+In multi-project workspaces, always use conventions from the matching
+`monorepo.packages[].conventions` for the subdirectory you're working in.
 
 ### 2.2 Check before creating
 
@@ -46,8 +56,8 @@ Before creating any new file, class, enum, constant, or service:
 1. Check `conventions.json → centralized_components` for existing locations.
 2. Search the codebase for existing implementations:
    ```
-   grep -rn "class {Name}" --include="*.py" --include="*.ts"
-   find . -name "*{name}*" -type f | grep -v node_modules
+   grep -rn "class {Name}\|struct {Name}\|enum {Name}" --include="*.py" --include="*.ts" --include="*.swift" --include="*.go" --include="*.java"
+   find . -name "*{name}*" -type f | grep -v node_modules | grep -v .build
    ```
 3. If a similar component exists, **extend or reuse** it — do not duplicate.
 4. If creating new, place it in the conventional location.
@@ -133,53 +143,53 @@ deeper, ad-hoc exploration.
 
 ```bash
 # Models / schemas
-find . -type d -name "models" -o -name "schemas" | grep -v node_modules
-grep -rn "class.*BaseModel\|class.*Model\|interface " --include="*.py" --include="*.ts" | head -20
+find . -type d \( -name "models" -o -name "Models" -o -name "schemas" \) | grep -v node_modules | grep -v .build
+grep -rn "class.*BaseModel\|class.*Model\|struct.*Codable\|interface " --include="*.py" --include="*.ts" --include="*.swift" | head -20
 
 # Enums / constants
-find . -name "*enum*" -o -name "*constant*" | grep -v node_modules
-grep -rn "class.*Enum\|enum " --include="*.py" --include="*.ts" | head -15
+find . -name "*enum*" -o -name "*constant*" -o -name "*Enum*" | grep -v node_modules | grep -v .build
+grep -rn "class.*Enum\|enum " --include="*.py" --include="*.ts" --include="*.swift" | head -15
 
 # Services / clients
-find . -type d -name "services" -o -name "clients" | grep -v node_modules
-grep -rn "class.*Service\|class.*Client" --include="*.py" --include="*.ts" | head -15
+find . -type d \( -name "services" -o -name "Services" -o -name "clients" -o -name "Clients" \) | grep -v node_modules | grep -v .build
+grep -rn "class.*Service\|class.*Client\|struct.*Service" --include="*.py" --include="*.ts" --include="*.swift" | head -15
 ```
 
 ### Understand library usage
 
 ```bash
 # Find how a library is used
-grep -rn "import.*{library}" --include="*.py" --include="*.ts" | head -20
+grep -rn "import.*{library}" --include="*.py" --include="*.ts" --include="*.swift" | head -20
 
 # Find wrapper classes
-grep -rn "class.*Client\|class.*Base" --include="*.py" --include="*.ts" | head -10
+grep -rn "class.*Client\|class.*Base\|protocol.*" --include="*.py" --include="*.ts" --include="*.swift" | head -10
 
 # Find configuration
-grep -rn "timeout\|retry\|config" --include="*.py" --include="*.ts" | head -15
+grep -rn "timeout\|retry\|config" --include="*.py" --include="*.ts" --include="*.swift" | head -15
 ```
 
 ### Understand structure
 
 ```bash
-# Project layout
-find . -maxdepth 3 -type f \( -name "*.py" -o -name "*.ts" \) | grep -v node_modules | grep -v __pycache__ | head -30
+# Project layout (all languages)
+find . -maxdepth 3 -type f \( -name "*.py" -o -name "*.ts" -o -name "*.swift" -o -name "*.go" -o -name "*.java" \) | grep -v node_modules | grep -v __pycache__ | grep -v .build | head -30
 
 # Route / endpoint definitions
-grep -rn "@app\.\|@router\.\|app\.get\|app\.post" --include="*.py" --include="*.ts" | head -15
+grep -rn "@app\.\|@router\.\|app\.get\|app\.post\|HandleFunc" --include="*.py" --include="*.ts" --include="*.go" | head -15
 
 # Test structure
-find . -name "*test*" -type f | grep -v node_modules | head -15
+find . -name "*test*" -o -name "*Test*" -o -name "*spec*" | grep -v node_modules | grep -v .build | head -15
 ```
 
 ### Check for patterns
 
 ```bash
 # How are errors handled?
-grep -rn "try:\|catch\|if err.*!=.*nil\|Result<" --include="*.py" --include="*.ts" --include="*.go" | head -10
+grep -rn "try:\|catch\|do {\|if err.*!=.*nil\|Result<" --include="*.py" --include="*.ts" --include="*.swift" --include="*.go" | head -10
 
 # Logging pattern
-grep -rn "logger\.\|log\.\|console\." --include="*.py" --include="*.ts" | head -10
+grep -rn "logger\.\|log\.\|os\.Logger\|console\." --include="*.py" --include="*.ts" --include="*.swift" | head -10
 
 # Auth / security
-grep -rn "auth\|middleware\|guard\|Depends(" --include="*.py" --include="*.ts" | head -10
+grep -rn "auth\|middleware\|guard\|Depends(" --include="*.py" --include="*.ts" --include="*.swift" | head -10
 ```
