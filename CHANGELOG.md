@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/dan1hc/idd/compare/v1.1.0...v1.1.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* update install script with new files ([de28515](https://github.com/dan1hc/idd/commit/de285153022d5b1d1193071f05fb38d05b8028f8))
+
 # [1.1.0](https://github.com/dan1hc/idd/compare/v1.0.2...v1.1.0) (2026-02-05)
 
 
