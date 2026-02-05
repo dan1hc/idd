@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/dan1hc/idd/compare/v1.0.2...v1.1.0) (2026-02-05)
+
+
+### Features
+
+* self-improving loop, AI-driven authoring, auto-verify, learn patterns ([fc61a63](https://github.com/dan1hc/idd/commit/fc61a639208749f828a1d53c51504a53389f839b))
+
 ## [1.0.2](https://github.com/dan1hc/idd/compare/v1.0.1...v1.0.2) (2026-01-20)
 
 
