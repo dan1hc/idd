@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/dan1hc/idd/compare/v1.4.0...v1.4.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* make IDD actually work ([6079682](https://github.com/dan1hc/idd/commit/6079682e50fac0d558f90b3b4e6070837b6dda3b))
+
 # [3.0.0](https://github.com/dan1hc/idd/compare/v2.1.0...v3.0.0) (2026-02-05)
 
 
