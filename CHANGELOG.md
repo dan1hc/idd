@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/dan1hc/idd/compare/v1.3.0...v1.4.0) (2026-02-05)
+
+
+### Features
+
+* support for more complex workspaces ([8ecc5bc](https://github.com/dan1hc/idd/commit/8ecc5bc725e7232c337fa6b205633c1da76fd1f7))
+
 # [2.1.0](https://github.com/dan1hc/idd/compare/v1.3.0...v2.1.0) (2026-02-05)
 
 
