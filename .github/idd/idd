@@ -1,0 +1,346 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+IDD_VERSION="2.0.0"
+IDD_DIR="$(cd "$(dirname "$0")" && pwd)"
+IDD_ROOT="$(cd "$IDD_DIR/../.." && pwd)"
+
+# --- Colors ---
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+usage() {
+  cat <<EOF
+${BOLD}idd${NC} v${IDD_VERSION} — Intent-Driven Development
+
+${BOLD}Usage:${NC}
+  idd init           Detect conventions, scaffold files, copy to tool locations
+  idd detect         Re-detect codebase conventions → conventions.json
+  idd learn <rule>   Add a learned rule to learned.json
+
+${BOLD}Files:${NC}
+  .github/idd/conventions.json    Auto-detected codebase conventions
+  .github/idd/learned.json        Human-confirmed rules
+  .github/idd/instructions.md     AI reads this (copied to tool locations)
+  .github/idd/features/*.md       Feature specs (AI reads directly)
+
+EOF
+}
+
+# ─────────────────────────────────────────────────────────
+#  detect — extract conventions from the codebase
+# ─────────────────────────────────────────────────────────
+cmd_detect() {
+  cd "$IDD_ROOT"
+  echo -e "${CYAN}Detecting conventions...${NC}"
+
+  local lang="" framework="" pkg_mgr=""
+  local indent="" quotes="" line_length="" fmt_source="fallback" fmt_config=""
+  local test_fw="" test_loc="" test_naming=""
+  local log_lib="" log_style=""
+  local func_naming="" class_naming="" file_naming=""
+  local import_style="" err_pattern=""
+  local comp_models="" comp_enums="" comp_services=""
+
+  # --- Language & framework ---
+  if [[ -f pyproject.toml ]] || [[ -f setup.py ]] || [[ -f requirements.txt ]]; then
+    lang="python"
+    grep -q "fastapi" pyproject.toml requirements.txt 2>/dev/null && framework="fastapi"
+    grep -q "django" pyproject.toml requirements.txt 2>/dev/null && framework="django"
+    grep -q "flask" pyproject.toml requirements.txt 2>/dev/null && framework="flask"
+    [[ -f pyproject.toml ]] && grep -q "\[tool.poetry\]" pyproject.toml 2>/dev/null && pkg_mgr="poetry"
+    [[ -z "$pkg_mgr" && -f pyproject.toml ]] && pkg_mgr="pip"
+    [[ -z "$pkg_mgr" && -f requirements.txt ]] && pkg_mgr="pip"
+  elif [[ -f package.json ]]; then
+    lang="typescript"
+    [[ -f tsconfig.json ]] || lang="javascript"
+    if [[ -f package.json ]]; then
+      grep -q '"next"' package.json 2>/dev/null && framework="nextjs"
+      grep -q '"express"' package.json 2>/dev/null && framework="express"
+      grep -q '"react"' package.json 2>/dev/null && [[ -z "$framework" ]] && framework="react"
+      grep -q '"vue"' package.json 2>/dev/null && framework="vue"
+    fi
+    command -v pnpm &>/dev/null && [[ -f pnpm-lock.yaml ]] && pkg_mgr="pnpm"
+    [[ -z "$pkg_mgr" && -f yarn.lock ]] && pkg_mgr="yarn"
+    [[ -z "$pkg_mgr" && -f package-lock.json ]] && pkg_mgr="npm"
+    [[ -z "$pkg_mgr" ]] && pkg_mgr="npm"
+  elif [[ -f go.mod ]]; then
+    lang="go"; pkg_mgr="go mod"
+    grep -q "gin-gonic" go.mod 2>/dev/null && framework="gin"
+    grep -q "labstack/echo" go.mod 2>/dev/null && framework="echo"
+  elif [[ -f Cargo.toml ]]; then
+    lang="rust"; pkg_mgr="cargo"
+    grep -q "actix" Cargo.toml 2>/dev/null && framework="actix"
+    grep -q "axum" Cargo.toml 2>/dev/null && framework="axum"
+  fi
+
+  # --- Formatting ---
+  if [[ -f .editorconfig ]]; then
+    fmt_source="config"; fmt_config=".editorconfig"
+    local raw_indent; raw_indent=$(grep "indent_size" .editorconfig 2>/dev/null | head -1 | sed 's/.*= *//')
+    local indent_style; indent_style=$(grep "indent_style" .editorconfig 2>/dev/null | head -1 | sed 's/.*= *//')
+    [[ "$indent_style" == "tab" ]] && indent="tabs" || indent="${raw_indent:-4} spaces"
+  fi
+  if [[ -z "$indent" && -f pyproject.toml ]]; then
+    local black_indent; black_indent=$(grep -A5 "\[tool.black\]" pyproject.toml 2>/dev/null | grep "line.length" | sed 's/.*= *//')
+    [[ -n "$black_indent" ]] && line_length="$black_indent" && fmt_source="config" && fmt_config="pyproject.toml"
+    local ruff_indent; ruff_indent=$(grep -A5 "\[tool.ruff\]" pyproject.toml 2>/dev/null | grep "line-length" | sed 's/.*= *//')
+    [[ -n "$ruff_indent" ]] && line_length="$ruff_indent" && fmt_source="config" && fmt_config="pyproject.toml"
+  fi
+  if [[ -z "$indent" ]] && ls .prettierrc* 2>/dev/null | head -1 | grep -q .; then
+    fmt_source="config"; fmt_config=$(ls .prettierrc* 2>/dev/null | head -1)
+    local tab_w; tab_w=$(grep -o '"tabWidth"[[:space:]]*:[[:space:]]*[0-9]*' "$fmt_config" 2>/dev/null | grep -o '[0-9]*')
+    [[ -n "$tab_w" ]] && indent="${tab_w} spaces"
+    grep -q '"singleQuote"[[:space:]]*:[[:space:]]*true' "$fmt_config" 2>/dev/null && quotes="single"
+    grep -q '"semi"[[:space:]]*:[[:space:]]*false' "$fmt_config" 2>/dev/null || true
+  fi
+  if [[ -z "$indent" ]]; then
+    # Infer from code
+    local sample; sample=$(find . -maxdepth 4 \( -name "*.py" -o -name "*.ts" -o -name "*.js" -o -name "*.go" -o -name "*.rs" \) ! -path "*/node_modules/*" ! -path "*/__pycache__/*" ! -path "*/.git/*" | head -1)
+    if [[ -n "$sample" ]]; then
+      local leading; leading=$(grep -m5 "^  " "$sample" 2>/dev/null | head -1)
+      if [[ -n "$leading" ]]; then
+        local spaces; spaces=$(echo "$leading" | sed 's/[^ ].*//' | wc -c)
+        spaces=$((spaces - 1))
+        [[ $spaces -gt 0 ]] && indent="${spaces} spaces" && fmt_source="inferred"
+      fi
+    fi
+  fi
+  # Defaults
+  if [[ "$lang" == "python" ]]; then
+    [[ -z "$indent" ]] && indent="4 spaces"
+    [[ -z "$quotes" ]] && quotes="double"
+    [[ -z "$line_length" ]] && line_length="88"
+  elif [[ "$lang" == "typescript" || "$lang" == "javascript" ]]; then
+    [[ -z "$indent" ]] && indent="2 spaces"
+    [[ -z "$quotes" ]] && quotes="single"
+    [[ -z "$line_length" ]] && line_length="100"
+  else
+    [[ -z "$indent" ]] && indent="4 spaces"
+    [[ -z "$quotes" ]] && quotes="double"
+    [[ -z "$line_length" ]] && line_length="100"
+  fi
+
+  # --- Naming conventions ---
+  case "$lang" in
+    python)  func_naming="snake_case"; class_naming="PascalCase"; file_naming="snake_case" ;;
+    go)      func_naming="camelCase";  class_naming="PascalCase"; file_naming="snake_case" ;;
+    rust)    func_naming="snake_case"; class_naming="PascalCase"; file_naming="snake_case" ;;
+    *)       func_naming="camelCase";  class_naming="PascalCase"; file_naming="camelCase"  ;;
+  esac
+
+  # --- Testing ---
+  if [[ -f pytest.ini || -f conftest.py ]] || grep -q "pytest" pyproject.toml 2>/dev/null; then
+    test_fw="pytest"; test_loc="tests/"; test_naming="test_{module}_{behavior}"
+  elif ls jest.config.* 2>/dev/null | head -1 | grep -q . || ([ -f package.json ] && grep -q '"jest"' package.json 2>/dev/null); then
+    test_fw="jest"; test_loc="__tests__/ or *.test.ts"; test_naming="describe/it"
+  elif ls vitest.config.* 2>/dev/null | head -1 | grep -q .; then
+    test_fw="vitest"; test_loc="*.test.ts"; test_naming="describe/it"
+  elif [[ "$lang" == "go" ]]; then
+    test_fw="go test"; test_loc="*_test.go"; test_naming="Test{Function}"
+  fi
+
+  # --- Logging ---
+  if grep -rq "structlog\|from structlog" --include="*.py" . 2>/dev/null; then
+    log_lib="structlog"; log_style="structured"
+  elif grep -rq "import logging" --include="*.py" . 2>/dev/null; then
+    log_lib="logging"; log_style="formatted"
+  elif grep -rq "winston\|pino" --include="*.ts" --include="*.js" . 2>/dev/null; then
+    log_lib=$(grep -roh "winston\|pino" --include="*.ts" --include="*.js" . 2>/dev/null | head -1)
+    log_style="structured"
+  fi
+
+  # --- Centralized components ---
+  comp_models=$(find . -maxdepth 4 -type d -name "models" ! -path "*/node_modules/*" ! -path "*/__pycache__/*" 2>/dev/null | head -1 | sed "s|^\./||")
+  comp_enums=$(find . -maxdepth 4 -type d \( -name "enums" -o -name "constants" -o -name "types" \) ! -path "*/node_modules/*" 2>/dev/null | head -1 | sed "s|^\./||")
+  comp_services=$(find . -maxdepth 4 -type d \( -name "services" -o -name "clients" \) ! -path "*/node_modules/*" 2>/dev/null | head -1 | sed "s|^\./||")
+
+  # --- Import style ---
+  if [[ "$lang" == "python" ]]; then
+    local abs_count; abs_count=$(grep -rch "^from [a-zA-Z]" --include="*.py" . 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
+    local rel_count; rel_count=$(grep -rch "^from \." --include="*.py" . 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)
+    if [[ "$abs_count" -gt "$rel_count" ]]; then import_style="absolute"
+    elif [[ "$rel_count" -gt "$abs_count" ]]; then import_style="relative"
+    else import_style="mixed"; fi
+  fi
+
+  # --- Error handling ---
+  if [[ "$lang" == "python" ]]; then err_pattern="try/except"
+  elif [[ "$lang" == "go" ]]; then err_pattern="if err != nil"
+  elif [[ "$lang" == "rust" ]]; then err_pattern="Result type"
+  else err_pattern="try/catch"; fi
+
+  # --- Write conventions.json ---
+  local out="$IDD_DIR/conventions.json"
+  cat > "$out" <<CONV
+{
+  "idd_version": "${IDD_VERSION}",
+  "detected_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "language": "${lang:-unknown}",
+  "framework": $(if [[ -n "$framework" ]]; then echo "\"$framework\""; else echo "null"; fi),
+  "package_manager": $(if [[ -n "$pkg_mgr" ]]; then echo "\"$pkg_mgr\""; else echo "null"; fi),
+  "formatting": {
+    "indent": "${indent}",
+    "quotes": "${quotes}",
+    "line_length": ${line_length},
+    "source": "${fmt_source}"$(if [[ -n "$fmt_config" ]]; then echo ",
+    \"config_file\": \"${fmt_config}\""; fi)
+  },
+  "style": {
+    "naming": {
+      "functions": "${func_naming}",
+      "classes": "${class_naming}",
+      "files": "${file_naming}"
+    },
+    "error_handling": "${err_pattern}",
+    "imports": $(if [[ -n "$import_style" ]]; then echo "\"$import_style\""; else echo "null"; fi)
+  },
+  "testing": $(if [[ -n "$test_fw" ]]; then cat <<TEST
+{
+    "framework": "${test_fw}",
+    "location": "${test_loc}",
+    "naming": "${test_naming}"
+  }
+TEST
+  else echo "null"; fi),
+  "logging": $(if [[ -n "$log_lib" ]]; then cat <<LOG
+{
+    "library": "${log_lib}",
+    "style": "${log_style}"
+  }
+LOG
+  else echo "null"; fi),
+  "centralized_components": {
+    "models": $(if [[ -n "$comp_models" ]]; then echo "\"$comp_models\""; else echo "null"; fi),
+    "enums": $(if [[ -n "$comp_enums" ]]; then echo "\"$comp_enums\""; else echo "null"; fi),
+    "services": $(if [[ -n "$comp_services" ]]; then echo "\"$comp_services\""; else echo "null"; fi)
+  }
+}
+CONV
+
+  echo -e "${GREEN}✓${NC} Wrote ${out#$IDD_ROOT/}"
+  echo -e "  Language: ${BOLD}${lang:-unknown}${NC}"
+  [[ -n "$framework" ]] && echo -e "  Framework: ${BOLD}${framework}${NC}" || true
+  echo -e "  Formatting: ${indent}, ${quotes} quotes (${fmt_source})"
+  [[ -n "$test_fw" ]] && echo -e "  Testing: ${test_fw}" || true
+}
+
+# ─────────────────────────────────────────────────────────
+#  learn — add a natural-language rule
+# ─────────────────────────────────────────────────────────
+cmd_learn() {
+  local rule="$*"
+  if [[ -z "$rule" ]]; then
+    echo -e "${RED}Usage: idd learn <rule>${NC}"
+    echo '  Example: idd learn "Always use httpx via BaseClient, never raw"'
+    exit 1
+  fi
+
+  local learned="$IDD_DIR/learned.json"
+
+  # Bootstrap if missing
+  if [[ ! -f "$learned" ]]; then
+    echo '{"rules":[]}' > "$learned"
+  fi
+
+  # Get next ID
+  local max_id; max_id=$(python3 -c "
+import json, sys
+with open('$learned') as f:
+    data = json.load(f)
+ids = [r['id'] for r in data.get('rules', [])]
+print(max(ids) if ids else 0)
+" 2>/dev/null || echo 0)
+  local next_id=$((max_id + 1))
+
+  # Append rule
+  python3 -c "
+import json, sys
+from datetime import datetime, timezone
+
+with open('$learned') as f:
+    data = json.load(f)
+
+data['rules'].append({
+    'id': $next_id,
+    'rule': '''$rule''',
+    'added': datetime.now(timezone.utc).strftime('%Y-%m-%d')
+})
+
+with open('$learned', 'w') as f:
+    json.dump(data, f, indent=2)
+"
+
+  echo -e "${GREEN}✓${NC} Learned rule #${next_id}: ${rule}"
+}
+
+# ─────────────────────────────────────────────────────────
+#  init — scaffold + detect + copy to tool locations
+# ─────────────────────────────────────────────────────────
+cmd_init() {
+  cd "$IDD_ROOT"
+  echo -e "${BOLD}Initializing IDD v${IDD_VERSION}${NC}\n"
+
+  # 1. Ensure directories exist
+  mkdir -p "$IDD_DIR/schemas" "$IDD_DIR/features"
+
+  # 2. Bootstrap learned.json if missing
+  if [[ ! -f "$IDD_DIR/learned.json" ]]; then
+    echo '{"rules":[]}' > "$IDD_DIR/learned.json"
+    echo -e "${GREEN}✓${NC} Created learned.json"
+  fi
+
+  # 3. Copy feature template if missing
+  if [[ ! -f "$IDD_DIR/features/_template.md" ]]; then
+    echo -e "${YELLOW}⚠${NC} features/_template.md not found — download from github.com/dan1hc/idd"
+  fi
+
+  # 4. Run detection
+  cmd_detect
+
+  # 5. Copy instructions.md to tool-native locations
+  local src="$IDD_DIR/instructions.md"
+  if [[ ! -f "$src" ]]; then
+    echo -e "${YELLOW}⚠${NC} instructions.md not found — download from github.com/dan1hc/idd"
+    return
+  fi
+
+  local copied=0
+
+  # Cursor
+  cp "$src" "$IDD_ROOT/.cursorrules" 2>/dev/null && copied=$((copied + 1)) && \
+    echo -e "${GREEN}✓${NC} Copied → .cursorrules"
+
+  # Claude Code
+  cp "$src" "$IDD_ROOT/CLAUDE.md" 2>/dev/null && copied=$((copied + 1)) && \
+    echo -e "${GREEN}✓${NC} Copied → CLAUDE.md"
+
+  # GitHub Copilot
+  mkdir -p "$IDD_ROOT/.github"
+  cp "$src" "$IDD_ROOT/.github/copilot-instructions.md" 2>/dev/null && copied=$((copied + 1)) && \
+    echo -e "${GREEN}✓${NC} Copied → .github/copilot-instructions.md"
+
+  echo ""
+  echo -e "${GREEN}Done.${NC} Instructions placed in ${copied} tool location(s)."
+  echo -e "Next: create a feature file in ${BOLD}.github/idd/features/${NC} and start coding."
+}
+
+# ─────────────────────────────────────────────────────────
+#  main
+# ─────────────────────────────────────────────────────────
+case "${1:-}" in
+  init)    cmd_init ;;
+  detect)  cmd_detect ;;
+  learn)   shift; cmd_learn "$@" ;;
+  -h|--help|help|"")  usage ;;
+  -v|--version)       echo "idd v${IDD_VERSION}" ;;
+  *)
+    echo -e "${RED}Unknown command: $1${NC}"
+    usage
+    exit 1
+    ;;
+esac
