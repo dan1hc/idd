@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/dan1hc/idd/compare/v1.1.1...v1.2.0) (2026-02-05)
+
+
+### Features
+
+* better library pattern detection ([0360d0a](https://github.com/dan1hc/idd/commit/0360d0a193fd3861c80f5be68a0dd549a8f60f05))
+
 ## [1.1.1](https://github.com/dan1hc/idd/compare/v1.1.0...v1.1.1) (2026-02-05)
 
 
