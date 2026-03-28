@@ -12,7 +12,7 @@ NC='\033[0m'
 BASE_URL="https://raw.githubusercontent.com/dan1hc/idd/main"
 
 echo ""
-echo -e "${BOLD}Installing IDD v3.2.0${NC}"
+echo -e "${BOLD}Installing IDD v3.3.0${NC}"
 echo ""
 
 # Create directory structure
@@ -35,6 +35,7 @@ curl -fsSL "$BASE_URL/.github/idd/features/_template.md" > .github/idd/features/
 
 echo -e "  ${BLUE}→${NC} Downloading prompt templates..."
 curl -fsSL "$BASE_URL/.github/idd/prompts/run.md" > .github/idd/prompts/run.md
+curl -fsSL "$BASE_URL/.github/idd/prompts/conventions.md" > .github/idd/prompts/conventions.md
 
 # Run init (scaffold files + copy instructions to tool locations)
 echo ""
@@ -43,14 +44,7 @@ echo ""
 echo ""
 echo -e "${GREEN}✓${NC} IDD installed successfully!"
 echo ""
-echo -e "${BOLD}Usage:${NC}"
-echo ""
-echo '  idd init           Scaffold files + copy instructions to AI tools'
-echo '  idd learn          Add an enforceable project rule'
-echo '  idd run            Execute a task through Copilot CLI with IDD artifacts'
-echo '  idd validate       Validate feature specs and glossary anchors'
-echo ""
-echo '  Next: open your AI tool and prompt "Populate conventions.json for this project."'
+echo 'Start: idd run --feature <name> "your task"'
 echo ""
 echo -e "Docs: ${BLUE}https://dan1hc.github.io/idd${NC}"
 echo ""

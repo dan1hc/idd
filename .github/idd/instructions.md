@@ -44,6 +44,9 @@ anything else.
 If the user says "refresh conventions", "redetect", or "update conventions.json",
 re-analyze the codebase and overwrite the file.
 
+IDD normally bootstraps this automatically during `idd init` by running Copilot
+CLI against the repository and schema.
+
 ---
 
 ## §1 Context

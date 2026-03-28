@@ -16,8 +16,9 @@ and produce code that *works* but doesn't *fit*.
 curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash
 ```
 
-This scaffolds the IDD file tree and copies `instructions.md` to where AI tools
-already look:
+This scaffolds the IDD file tree, copies `instructions.md` to where AI tools
+already look, and auto-populates `.github/idd/conventions.json` through Copilot
+CLI.
 
 | Tool | Reads from |
 |------|-----------|
@@ -25,24 +26,7 @@ already look:
 | Claude Code | `CLAUDE.md` |
 | GitHub Copilot | `.github/copilot-instructions.md` |
 
-### 2. Populate conventions
-
-Open Cursor, Claude Code, or GitHub Copilot and prompt:
-
-```
-Populate conventions.json for this project.
-```
-
-The AI reads `instructions.md` (already in place from step 1), reads the
-schema, reads your actual code — manifest files, configs, source files —
-and writes `conventions.json`. No bash heuristics. The LLM understands
-your code, so it captures things a script never could: library wrappers,
-integration patterns, API conventions. Works for monorepos too.
-
-You do this **once**. Every session after, the AI reads the populated
-conventions automatically.
-
-### 3. Build features
+### 2. Build features
 
 Run tasks through IDD's Copilot CLI wrapper so the required artifacts are
 injected every time:
@@ -86,10 +70,10 @@ Tell your AI tool to create a feature spec when starting new work.
 
 ## Refreshing Conventions
 
-After changing formatters, linters, or project structure, prompt:
+After changing formatters, linters, or project structure, run:
 
-```
-Refresh conventions.json.
+```bash
+.github/idd/idd refresh-conventions
 ```
 
 ## File Tree
@@ -104,7 +88,8 @@ Refresh conventions.json.
 │   ├── _template.md        # feature spec template
 │   └── *.md                # your feature specs
 ├── prompts/
-│   └── run.md              # prompt envelope for Copilot CLI runs
+│   ├── conventions.md      # prompt envelope for convention detection
+│   └── run.md              # prompt envelope for task runs
 └── schemas/
     └── conventions.schema.json
 ```

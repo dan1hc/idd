@@ -33,17 +33,9 @@
 
 <pre><code>curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash</code></pre>
 
-<p>This scaffolds the IDD file tree and copies <code>instructions.md</code> to where AI tools look (<code>.cursorrules</code>, <code>CLAUDE.md</code>, <code>.github/copilot-instructions.md</code>).</p>
+<p>This scaffolds the IDD file tree, copies <code>instructions.md</code> to where AI tools look (<code>.cursorrules</code>, <code>CLAUDE.md</code>, <code>.github/copilot-instructions.md</code>), and auto-populates <code>.github/idd/conventions.json</code> through Copilot CLI.</p>
 
-<h2>2. Populate conventions</h2>
-
-<p>Open Cursor, Claude Code, or GitHub Copilot and prompt:</p>
-
-<pre><code>Populate conventions.json for this project.</code></pre>
-
-<p>The AI reads your actual code — manifest files, configs, source files — and writes <code>conventions.json</code>. No bash heuristics. You do this <strong>once</strong>. Every session after, the AI reads the populated conventions automatically.</p>
-
-<h2>3. Build features</h2>
+<h2>2. Build features</h2>
 
 <p>Run tasks through IDD's Copilot CLI wrapper so the right artifacts are injected on every run:</p>
 
@@ -75,6 +67,7 @@
 │   ├── _template.md        # feature spec template
 │   └── *.md                # your feature specs
 ├── prompts/
+│   ├── conventions.md      # prompt envelope for convention detection
 │   └── run.md              # prompt envelope for Copilot CLI runs
 └── schemas/
     └── conventions.schema.json</code></pre>

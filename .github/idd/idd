@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IDD_VERSION="3.2.0"
+IDD_VERSION="3.3.0"
 IDD_DIR="$(cd "$(dirname "$0")" && pwd)"
 IDD_ROOT="$(cd "$IDD_DIR/../.." && pwd)"
 PROMPTS_DIR="$IDD_DIR/prompts"
 RUN_TEMPLATE="$PROMPTS_DIR/run.md"
+CONVENTIONS_TEMPLATE="$PROMPTS_DIR/conventions.md"
 
 # --- Colors ---
 RED='\033[0;31m'
@@ -20,8 +21,9 @@ usage() {
 ${BOLD}idd${NC} v${IDD_VERSION} — Intent-Driven Development
 
 ${BOLD}Usage:${NC}
-  idd init                               Scaffold files, copy instructions to AI tool locations
+  idd init                               Scaffold files, copy instructions, and auto-populate conventions
   idd learn --type <type> ...            Add a typed learned rule to learned.json
+  idd refresh-conventions                Re-analyze the repo and overwrite conventions.json via Copilot CLI
   idd run [--feature <name>] <task>      Execute a task through Copilot CLI with IDD artifacts injected
   idd validate [--feature <name>]        Validate IDD artifacts and feature glossary anchors
 
@@ -30,11 +32,11 @@ ${BOLD}Files:${NC}
   .github/idd/learned.json               Enforceable learned rules
   .github/idd/instructions.md            AI reads this (copied to tool locations)
   .github/idd/features/*.md              Feature specs (AI reads directly)
-  .github/idd/prompts/run.md             Prompt envelope used by idd run
+  .github/idd/prompts/*.md               Prompt envelopes used by IDD commands
 
 ${BOLD}Runner:${NC}
-  idd run requires a populated conventions.json and injects the relevant IDD
-  artifacts into a Copilot CLI prompt envelope before the model edits code.
+  idd init and idd refresh-conventions populate conventions.json through
+  Copilot CLI. idd run injects the relevant IDD artifacts before editing code.
 
 ${BOLD}Validator:${NC}
   idd validate checks required artifacts, enforces typed learned rules, and
@@ -197,6 +199,50 @@ prompt = (
 
 output.write_text(prompt)
 PYEOF
+}
+
+render_conventions_prompt() {
+  local output_path="$1"
+
+  ensure_file "$CONVENTIONS_TEMPLATE" "Missing conventions prompt template at .github/idd/prompts/conventions.md"
+  cp "$CONVENTIONS_TEMPLATE" "$output_path"
+}
+
+invoke_copilot_prompt_file() {
+  local prompt_file="$1"
+  local action="$2"
+  local model="${3:-${IDD_COPILOT_MODEL:-}}"
+  local effort="${4:-${IDD_COPILOT_REASONING_EFFORT:-}}"
+  local copilot_cmd
+  copilot_cmd="$(detect_copilot_cmd)"
+
+  local -a cmd
+  if [[ -n "${IDD_COPILOT_CMD:-}" ]]; then
+    read -r -a cmd <<<"$copilot_cmd"
+  else
+    cmd=("$copilot_cmd")
+  fi
+
+  cmd+=(
+    -p "$(<"$prompt_file")"
+    --add-dir "$IDD_ROOT"
+    --allow-all-tools
+    --output-format text
+    --stream off
+    --silent
+    --no-ask-user
+  )
+
+  if [[ -n "$model" ]]; then
+    cmd+=(--model "$model")
+  fi
+
+  if [[ -n "$effort" ]]; then
+    cmd+=(--reasoning-effort "$effort")
+  fi
+
+  info "$action"
+  "${cmd[@]}"
 }
 
 cmd_learn() {
@@ -379,6 +425,10 @@ with open('$IDD_DIR/conventions.json', 'w') as f:
     warn 'prompts/run.md not found — download from github.com/dan1hc/idd'
   fi
 
+  if [[ ! -f "$CONVENTIONS_TEMPLATE" ]]; then
+    warn 'prompts/conventions.md not found — download from github.com/dan1hc/idd'
+  fi
+
   local src="$IDD_DIR/instructions.md"
   if [[ ! -f "$src" ]]; then
     warn 'instructions.md not found — download from github.com/dan1hc/idd'
@@ -397,14 +447,87 @@ with open('$IDD_DIR/conventions.json', 'w') as f:
   cp "$src" "$IDD_ROOT/.github/copilot-instructions.md" 2>/dev/null && copied=$((copied + 1)) && \
     success 'Copied → .github/copilot-instructions.md'
 
+  if conventions_ready; then
+    info 'conventions.json already populated'
+  else
+    cmd_refresh_conventions
+  fi
+
   echo ""
   success "Instructions placed in ${copied} tool location(s)."
   echo ""
-  echo 'Next steps:'
-  echo '  1. Prompt: "Populate conventions.json for this project."'
-  echo '  2. Add rules: idd learn --type forbid_import --glob "src/**/*.py" --module httpx --message "Use BaseClient"'
-  echo '  3. Run: idd run --feature <name> "your task"'
-  echo '  4. Check: idd validate --feature <name>'
+  echo 'Start here:'
+  echo '  1. Run: idd run --feature <name> "your task"'
+  echo '  2. Check: idd validate --feature <name>'
+  echo '  3. Optional: idd learn --type forbid_import --glob "src/**/*.py" --module httpx --message "Use BaseClient"'
+}
+
+cmd_refresh_conventions() {
+  local dry_run=0
+  local print_prompt=0
+  local model="${IDD_COPILOT_MODEL:-}"
+  local effort="${IDD_COPILOT_REASONING_EFFORT:-}"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dry-run)
+        dry_run=1
+        shift
+        ;;
+      --print-prompt)
+        print_prompt=1
+        shift
+        ;;
+      --model)
+        [[ $# -gt 1 ]] || die '--model requires a value'
+        model="$2"
+        shift 2
+        ;;
+      --reasoning-effort|--effort)
+        [[ $# -gt 1 ]] || die '--reasoning-effort requires a value'
+        effort="$2"
+        shift 2
+        ;;
+      -h|--help)
+        cat <<EOF
+Usage: idd refresh-conventions [--print-prompt] [--dry-run] [--model <model>] [--reasoning-effort <level>]
+
+Examples:
+  idd refresh-conventions
+  idd refresh-conventions --print-prompt
+EOF
+        return
+        ;;
+      *)
+        die "Unknown option for refresh-conventions: $1"
+        ;;
+    esac
+  done
+
+  ensure_file "$IDD_DIR/instructions.md" 'Missing .github/idd/instructions.md. Run idd init.'
+  ensure_file "$IDD_DIR/schemas/conventions.schema.json" 'Missing .github/idd/schemas/conventions.schema.json. Run idd init.'
+
+  if [[ ! -f "$IDD_DIR/conventions.json" ]]; then
+    echo '{"idd_version":"'$IDD_VERSION'","status":"pending","detected_at":null,"schema": ".github/idd/schemas/conventions.schema.json","message":"AI will populate this during init."}' > "$IDD_DIR/conventions.json"
+  fi
+
+  local prompt_file
+  prompt_file="$(mktemp)"
+  trap "rm -f \"$prompt_file\"" EXIT
+
+  render_conventions_prompt "$prompt_file"
+
+  if [[ "$print_prompt" -eq 1 || "$dry_run" -eq 1 ]]; then
+    cat "$prompt_file"
+  fi
+
+  if [[ "$dry_run" -eq 1 ]]; then
+    return
+  fi
+
+  invoke_copilot_prompt_file "$prompt_file" 'Populating conventions.json via Copilot CLI' "$model" "$effort"
+  conventions_ready || die 'Copilot CLI completed but conventions.json is still pending or incomplete.'
+  success 'Populated conventions.json'
 }
 
 cmd_run() {
@@ -476,7 +599,7 @@ EOF
   ensure_file "$IDD_DIR/instructions.md" 'Missing .github/idd/instructions.md. Run idd init.'
   ensure_file "$IDD_DIR/learned.json" 'Missing .github/idd/learned.json. Run idd init.'
   ensure_file "$IDD_DIR/conventions.json" 'Missing .github/idd/conventions.json. Run idd init.'
-  conventions_ready || die 'conventions.json is pending or incomplete. Populate it before running idd run.'
+  conventions_ready || die 'conventions.json is pending or incomplete. Run idd refresh-conventions.'
 
   if [[ -n "$feature_arg" ]]; then
     feature_path="$(resolve_feature_path "$feature_arg")"
@@ -496,36 +619,7 @@ EOF
     return
   fi
 
-  local copilot_cmd
-  copilot_cmd="$(detect_copilot_cmd)"
-
-  local -a cmd
-  if [[ -n "${IDD_COPILOT_CMD:-}" ]]; then
-    read -r -a cmd <<<"$copilot_cmd"
-  else
-    cmd=("$copilot_cmd")
-  fi
-
-  cmd+=(
-    -p "$(<"$prompt_file")"
-    --add-dir "$IDD_ROOT"
-    --allow-all-tools
-    --output-format text
-    --stream off
-    --silent
-    --no-ask-user
-  )
-
-  if [[ -n "$model" ]]; then
-    cmd+=(--model "$model")
-  fi
-
-  if [[ -n "$effort" ]]; then
-    cmd+=(--reasoning-effort "$effort")
-  fi
-
-  info "Running Copilot CLI with IDD prompt envelope"
-  "${cmd[@]}"
+  invoke_copilot_prompt_file "$prompt_file" 'Running Copilot CLI with IDD prompt envelope' "$model" "$effort"
 }
 
 cmd_validate() {
@@ -853,6 +947,10 @@ case "${1:-}" in
   learn)
     shift
     cmd_learn "$@"
+    ;;
+  refresh-conventions)
+    shift
+    cmd_refresh_conventions "$@"
     ;;
   run)
     shift

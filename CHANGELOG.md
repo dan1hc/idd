@@ -5,6 +5,16 @@
 
 * enforce adherence via copilot cli ([751d900](https://github.com/dan1hc/idd/commit/751d9008a548f0c182a1bab93cfc1d1fbe61dcf9))
 
+# [3.3.0](https://github.com/dan1hc/idd/compare/v3.2.0...v3.3.0) (2026-03-28)
+
+
+### Features
+
+* auto-bootstrap conventions — `idd init` now invokes Copilot CLI to populate `conventions.json` during install/scaffold when it is missing or pending
+* `idd refresh-conventions` — explicit command to re-run convention detection through Copilot CLI
+* condensed onboarding — install output and docs now point directly to building work instead of asking the user to manually prompt an AI tool to populate conventions
+
+
 ## [1.4.1](https://github.com/dan1hc/idd/compare/v1.4.0...v1.4.1) (2026-02-05)
 
 
