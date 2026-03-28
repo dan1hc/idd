@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/dan1hc/idd/compare/v1.5.0...v1.6.0) (2026-03-28)
+
+
+### Features
+
+* smoother onboarding ([462ea0c](https://github.com/dan1hc/idd/commit/462ea0c140d0eafca6ae04151a95a96d869de191))
+
 # [1.5.0](https://github.com/dan1hc/idd/compare/v1.4.1...v1.5.0) (2026-03-28)
 
 
