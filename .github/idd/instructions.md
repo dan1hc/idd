@@ -62,7 +62,7 @@ Before making changes, load the project context:
    - Top-level fields reflect the primary project but may not apply to all.
 
 2. **Learned rules** — `.github/idd/learned.json`
-   Human-confirmed rules that override or extend conventions.
+   Machine-checkable rules that override or extend conventions.
    These take precedence over detected conventions.
 
 3. **Feature spec** — `.github/idd/features/<name>.md`
@@ -106,10 +106,13 @@ Before creating any new file, class, enum, constant, or service:
 
 ### 2.3 Follow learned rules
 
-Every rule in `learned.json` is mandatory. Common categories:
-- Library usage (e.g., "Always use BaseClient, never raw httpx")
-- Architecture patterns (e.g., "Services never import from routes")
-- Code style (e.g., "All public functions must have docstrings")
+Every rule in `learned.json` is mandatory and typed. Supported rule types:
+- `forbid_import` — disallow importing a module inside files matched by `glob`
+- `require_import` — require importing a module inside files matched by `glob`
+- `forbid_pattern` — disallow a regex pattern inside files matched by `glob`
+- `require_pattern` — require a regex pattern inside files matched by `glob`
+
+Treat each rule's `message` as the human explanation for why the constraint exists.
 
 ### 2.4 Feature workflow
 
@@ -166,9 +169,9 @@ During implementation, watch for patterns that should become learned rules.
 
 Tell the user:
 ```
-Proposed rule: "All HTTP clients must use BaseClient from src/clients/base.py"
-Evidence: found in 8/8 service files
-Save? → run: idd learn "All HTTP clients must use BaseClient from src/clients/base.py"
+Proposed rule: "Services must not import raw httpx"
+Evidence: found wrapper usage in every service module
+Save? → run: idd learn --type forbid_import --glob "src/services/**/*.py" --module httpx --message "Use BaseClient from src/clients/base.py instead of raw httpx"
 ```
 
 Wait for confirmation. Never save rules without user approval.

@@ -45,30 +45,37 @@
 
 <h2>3. Build features</h2>
 
-<p>Prompt with what you want to build:</p>
+<p>Run tasks through IDD's Copilot CLI wrapper so the right artifacts are injected on every run:</p>
 
-<pre><code>Add a POST /users endpoint with input validation.</code></pre>
+<pre><code>.github/idd/idd run --feature users-api &quot;Add a POST /users endpoint with input validation.&quot;</code></pre>
 
-<p>The AI reads your conventions + learned rules, creates a feature spec, writes code that matches your project's patterns, and updates the feature glossary so the next session knows what exists.</p>
+<p>Then validate the feature artifacts and glossary anchors:</p>
+
+<pre><code>.github/idd/idd validate --feature users-api</code></pre>
+
+<p>The runner bundles your instructions, conventions, learned rules, and feature spec into one prompt envelope for Copilot CLI. Validation then catches stale or unresolved feature memory.</p>
 
 <h2>Teaching project rules</h2>
 
 <p>When conventions alone aren't enough, teach explicit rules:</p>
 
-<pre><code>.github/idd/idd learn "Always use BaseClient, never raw httpx"</code></pre>
+<pre><code>.github/idd/idd learn --type forbid_import --glob &quot;src/services/**/*.py&quot; --module httpx \
+  --message &quot;Use BaseClient from src/clients/base.py instead of raw httpx&quot;</code></pre>
 
-<p>Rules persist in <code>learned.json</code> and take precedence over detected conventions.</p>
+<p>Rules persist in <code>learned.json</code> as typed policy and are enforced by <code>idd validate</code>.</p>
 
 <h2>File tree</h2>
 
 <pre class="tree"><code>.github/idd/
-├── idd                     # CLI (init, learn)
+├── idd                     # CLI (init, learn, run, validate)
 ├── instructions.md         # copied to AI tool locations
 ├── conventions.json        # project conventions (AI-populated)
 ├── learned.json            # human-confirmed rules
 ├── features/
 │   ├── _template.md        # feature spec template
 │   └── *.md                # your feature specs
+├── prompts/
+│   └── run.md              # prompt envelope for Copilot CLI runs
 └── schemas/
     └── conventions.schema.json</code></pre>
 

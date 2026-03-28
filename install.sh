@@ -12,11 +12,11 @@ NC='\033[0m'
 BASE_URL="https://raw.githubusercontent.com/dan1hc/idd/main"
 
 echo ""
-echo -e "${BOLD}Installing IDD v3.0.0${NC}"
+echo -e "${BOLD}Installing IDD v3.2.0${NC}"
 echo ""
 
 # Create directory structure
-mkdir -p .github/idd/features .github/idd/schemas
+mkdir -p .github/idd/features .github/idd/schemas .github/idd/prompts
 
 # Download files
 echo -e "  ${BLUE}→${NC} Downloading idd CLI..."
@@ -33,6 +33,9 @@ curl -fsSL "$BASE_URL/.github/idd/schemas/learned.schema.json" > .github/idd/sch
 echo -e "  ${BLUE}→${NC} Downloading feature template..."
 curl -fsSL "$BASE_URL/.github/idd/features/_template.md" > .github/idd/features/_template.md
 
+echo -e "  ${BLUE}→${NC} Downloading prompt templates..."
+curl -fsSL "$BASE_URL/.github/idd/prompts/run.md" > .github/idd/prompts/run.md
+
 # Run init (scaffold files + copy instructions to tool locations)
 echo ""
 .github/idd/idd init
@@ -43,7 +46,9 @@ echo ""
 echo -e "${BOLD}Usage:${NC}"
 echo ""
 echo '  idd init           Scaffold files + copy instructions to AI tools'
-echo '  idd learn "rule"   Add a project rule'
+echo '  idd learn          Add an enforceable project rule'
+echo '  idd run            Execute a task through Copilot CLI with IDD artifacts'
+echo '  idd validate       Validate feature specs and glossary anchors'
 echo ""
 echo '  Next: open your AI tool and prompt "Populate conventions.json for this project."'
 echo ""

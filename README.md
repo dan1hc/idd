@@ -44,26 +44,37 @@ conventions automatically.
 
 ### 3. Build features
 
-Prompt your AI tool with what you want to build:
+Run tasks through IDD's Copilot CLI wrapper so the required artifacts are
+injected every time:
 
-```
-Add a POST /users endpoint with input validation.
+```bash
+.github/idd/idd run --feature users-api "Add a POST /users endpoint with input validation."
 ```
 
-The AI reads your conventions + learned rules, creates a feature spec,
-writes code that matches your project's patterns, and updates the feature
-glossary so the next session knows what exists.
+The runner bundles your instructions, conventions, learned rules, and feature
+spec into a single prompt envelope for Copilot CLI. After the run, validate the
+feature artifacts:
+
+```bash
+.github/idd/idd validate --feature users-api
+```
+
+This shifts IDD from "hope the agent read the right files" to "inject the
+right files up front and fail validation when the artifacts drift."
 
 ## Teaching Rules
 
 Some things can't be detected — they're decisions your team made. Teach them:
 
 ```bash
-.github/idd/idd learn "Always use BaseClient from src/clients/base.py, never raw httpx"
-.github/idd/idd learn "Services must not import from routes — dependency goes one way"
+.github/idd/idd learn --type forbid_import --glob "src/services/**/*.py" --module httpx \
+    --message "Use BaseClient from src/clients/base.py instead of raw httpx"
+
+.github/idd/idd learn --type forbid_import --glob "src/services/**/*.py" --module routes \
+    --message "Services must not import from routes"
 ```
 
-Rules persist in `learned.json` and take precedence over detected conventions.
+Rules persist in `learned.json` as typed policy and are enforced by `idd validate`.
 
 ## Feature Specs
 
@@ -85,13 +96,15 @@ Refresh conventions.json.
 
 ```
 .github/idd/
-├── idd                     # CLI (init, learn)
+├── idd                     # CLI (init, learn, run, validate)
 ├── instructions.md         # copied to AI tool locations
 ├── conventions.json        # project conventions (AI-populated)
 ├── learned.json            # human-confirmed rules
 ├── features/
 │   ├── _template.md        # feature spec template
 │   └── *.md                # your feature specs
+├── prompts/
+│   └── run.md              # prompt envelope for Copilot CLI runs
 └── schemas/
     └── conventions.schema.json
 ```
