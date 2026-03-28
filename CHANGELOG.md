@@ -1,22 +1,9 @@
-# [3.2.0](https://github.com/dan1hc/idd/compare/v3.1.0...v3.2.0) (2026-03-28)
+## [1.4.1](https://github.com/dan1hc/idd/compare/v1.4.0...v1.4.1) (2026-02-05)
 
 
-### Features
+### Bug Fixes
 
-* typed learned rules — `learned.json` now stores enforceable `forbid_import`, `require_import`, `forbid_pattern`, and `require_pattern` rules
-* `idd learn` flag interface — rule creation now requires explicit typed fields like `--type`, `--glob`, `--module`, and `--pattern`
-* learned rule enforcement — `idd validate` now enforces learned rules across files matched by each rule's glob
-
-
-# [3.1.0](https://github.com/dan1hc/idd/compare/v3.0.0...v3.1.0) (2026-03-28)
-
-
-### Features
-
-* `idd run` — execute tasks through Copilot CLI with an IDD prompt envelope that injects instructions, conventions, learned rules, and an optional feature spec
-* `idd validate` — validate required IDD artifacts, feature status/checklists, and glossary `file::symbol` anchors
-* prompt templates directory — `.github/idd/prompts/run.md` stores the runner envelope used by `idd run`
-
+* make IDD actually work ([6079682](https://github.com/dan1hc/idd/commit/6079682e50fac0d558f90b3b4e6070837b6dda3b))
 
 # [3.0.0](https://github.com/dan1hc/idd/compare/v2.1.0...v3.0.0) (2026-02-05)
 
