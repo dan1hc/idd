@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/dan1hc/idd/compare/v1.4.1...v1.5.0) (2026-03-28)
+
+
+### Features
+
+* enforce adherence via copilot cli ([751d900](https://github.com/dan1hc/idd/commit/751d9008a548f0c182a1bab93cfc1d1fbe61dcf9))
+
 ## [1.4.1](https://github.com/dan1hc/idd/compare/v1.4.0...v1.4.1) (2026-02-05)
 
 
