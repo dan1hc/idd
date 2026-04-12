@@ -57,6 +57,15 @@ Trust order:
 If the files disagree, prefer the higher-trust source and record the mismatch in
 the file you update.
 
+North star:
+
+- Feature specs are the primary bridge between intent and source code.
+- Treat maintained feature specs as a durable execution layer for software intent, analogous to how IaC made infrastructure declarative and automatable.
+- Use Copilot to create or refresh the relevant feature spec before substantial implementation or maintenance work.
+- Let code execution follow the active feature spec.
+- Let later maintenance follow the active feature spec plus its glossary anchors.
+- As models improve, expect the same feature specs to yield better implementation, review, and maintenance outcomes.
+
 ---
 
 ## §2 Bootstrap Rules
@@ -130,13 +139,16 @@ Do not generate one feature per file or one feature per helper.
 
 When implementing a feature:
 
-1. Read the feature spec completely before editing code.
+1. Read the feature spec completely before editing code. If it is missing,
+   create it first. If it is stale, refresh it first.
 2. Match the established patterns in `conventions.md` and `learned.md`.
 3. Search for existing components before creating new ones.
 4. Reuse or extend existing code when the repository already has the right
    abstraction.
 5. Mark completed acceptance criteria with `[x]`.
 6. Update the feature glossary before finishing.
+7. If the code changes intended behavior, scope, or touched surfaces in a
+   meaningful way, update the feature spec in the same task.
 
 If repository evidence conflicts with the feature spec, fix the feature spec or
 raise the mismatch to the user instead of quietly diverging.
@@ -168,6 +180,9 @@ Rules:
 4. Include public entrypoints, major classes, endpoints, and other stable anchors
    the next agent will need.
 5. If a symbol moves or is renamed, update the glossary.
+
+Glossary anchors are how later maintenance work reconnects source code to the
+feature spec that justified it.
 
 Validate anchors against real files before finishing.
 
