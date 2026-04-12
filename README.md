@@ -1,5 +1,11 @@
 # IDD: Intent-Driven Development
 
+[![North Star: Feature Specs](https://img.shields.io/badge/North%20Star-Feature%20Specs-0f766e?style=for-the-badge)](#north-star)
+[![Interface: Copilot Chat](https://img.shields.io/badge/Interface-Copilot%20Chat-1d4ed8?style=for-the-badge)](#use-it-in-chat)
+[![Artifacts: Markdown First](https://img.shields.io/badge/Artifacts-Markdown%20First-d97706?style=for-the-badge)](#artifact-model)
+[![Paradigm: IaC for Software Intent](https://img.shields.io/badge/Paradigm-IaC%20for%20Software%20Intent-b91c1c?style=for-the-badge)](#why-this-matters)
+[![License: LGPL-3.0](https://img.shields.io/badge/License-LGPL--3.0-111827?style=for-the-badge)](#license)
+
 Make repo context compound instead of evaporate.
 
 IDD gives Copilot Chat a durable operating contract and a bounded artifact set
