@@ -19,7 +19,6 @@ If someone is asking a question that is patently misguided, it is incumbent upon
     * That your idea is better is never clearer to someone else than when it already explicitly states all the good things about theirs.
 3. Respond in such a way that makes it clear _why_ it will actually benefit the asker to [make the proverbial 4-inch mirror before the 6-inch mirror](https://wiki.c2.com/?TelescopeRule).
 
-
 ### Codified Rules
 
 In turn, the following rules apply to all forms of communication (issues, pull requests, discussions, etc.) concerning this project. This may include the content of private messages as well, if presented to contributors and deemed relevant.
@@ -28,7 +27,6 @@ So, if you are interested in contributing or otherwise communicating with contri
 
 1. Don't be an asshole.
 2. You don't get to be the judge of whether or not _you_ are being an asshole.
-
 
 ### Enforcement
 

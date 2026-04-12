@@ -27,57 +27,59 @@
 <body>
 
 <h1>IDD Quick Start</h1>
-<p class="subtitle">Make AI coding tools follow your project's conventions.</p>
+<p class="subtitle">Give Copilot Chat a durable working memory for your repository.</p>
 
 <h2>1. Install</h2>
 
 <pre><code>curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash</code></pre>
 
-<p>This scaffolds the IDD file tree, copies <code>instructions.md</code> to where AI tools look (<code>.cursorrules</code>, <code>CLAUDE.md</code>, <code>.github/copilot-instructions.md</code>), and auto-populates <code>.github/idd/conventions.json</code> through Copilot CLI.</p>
+<p>This scaffolds the IDD file tree, downloads <code>.github/copilot-instructions.md</code> and the feature template, creates the top-level Markdown artifacts if they are missing, and mirrors the same operating contract to <code>.cursorrules</code> and <code>CLAUDE.md</code>.</p>
 
-<h2>2. Build features</h2>
+<h2>2. Open Copilot Chat</h2>
 
-<p>Run tasks through IDD's Copilot CLI wrapper so the right artifacts are injected on every run:</p>
+<p>After install, work through Copilot Chat. For example:</p>
 
-<pre><code>.github/idd/idd run --feature users-api &quot;Add a POST /users endpoint with input validation.&quot;</code></pre>
+<pre><code>1. Discover this repository and populate the IDD context files.
+2. Create a feature spec for audit logging using the current IDD artifacts.
+3. Implement the active feature and update its glossary before finishing.</code></pre>
 
-<p>Then validate the feature artifacts and glossary anchors:</p>
+<p>The chat operating contract lives in <code>.github/copilot-instructions.md</code>. That file tells the agent which artifacts to read, which files to update, and how to handle discovery, planning, implementation, glossary maintenance, and evidence-backed consistency review.</p>
 
-<pre><code>.github/idd/idd validate --feature users-api</code></pre>
+<h2>3. Markdown artifacts</h2>
 
-<p>The runner bundles your instructions, conventions, learned rules, and feature spec into one prompt envelope for Copilot CLI. Validation then catches stale or unresolved feature memory.</p>
+<p>IDD now uses Markdown-first context files instead of JSON runtime artifacts.</p>
 
-<h2>Teaching project rules</h2>
+<ul>
+  <li><code>.github/idd/architecture.md</code> — system shape, runtime topology, integrations, and open questions</li>
+  <li><code>.github/idd/conventions.md</code> — code style, boundaries, library patterns, and component placement</li>
+  <li><code>.github/idd/inventory.md</code> — projects, modules, entrypoints, routes, jobs, and evidence</li>
+  <li><code>.github/idd/learned.md</code> — explicit user-approved rules that override discovered conventions</li>
+  <li><code>.github/idd/features/*.md</code> — bounded feature specs with acceptance criteria and glossary anchors</li>
+</ul>
 
-<p>When conventions alone aren't enough, teach explicit rules:</p>
+<h2>4. Feature specs</h2>
 
-<pre><code>.github/idd/idd learn --type forbid_import --glob &quot;src/services/**/*.py&quot; --module httpx \
-  --message &quot;Use BaseClient from src/clients/base.py instead of raw httpx&quot;</code></pre>
-
-<p>Rules persist in <code>learned.json</code> as typed policy and are enforced by <code>idd validate</code>.</p>
+<p>Feature files record the intended work, constraints, dependencies, and a glossary of stable <code>file::symbol</code> anchors. The glossary is how future agents find what was implemented.</p>
 
 <h2>File tree</h2>
 
-<pre class="tree"><code>.github/idd/
-├── idd                     # CLI (init, learn, run, validate)
-├── instructions.md         # copied to AI tool locations
-├── conventions.json        # project conventions (AI-populated)
-├── learned.json            # human-confirmed rules
-├── features/
-│   ├── _template.md        # feature spec template
-│   └── *.md                # your feature specs
-├── prompts/
-│   ├── conventions.md      # prompt envelope for convention detection
-│   └── run.md              # prompt envelope for Copilot CLI runs
-└── schemas/
-    └── conventions.schema.json</code></pre>
+<pre class="tree"><code>.github/
+├── copilot-instructions.md # primary operating contract for Copilot Chat
+└── idd/
+  ├── architecture.md     # system shape and runtime topology
+  ├── conventions.md      # coding patterns and boundaries
+  ├── inventory.md        # repository surfaces and evidence
+  ├── learned.md          # explicit user-approved rules
+  └── features/
+    ├── _template.md    # feature spec template
+    └── *.md            # project features</code></pre>
 
 <h2>Links</h2>
 
 <ul>
   <li><a href="https://github.com/dan1hc/idd">GitHub</a></li>
   <li><a href="https://github.com/dan1hc/idd/blob/main/README.md">Full README</a></li>
-  <li><a href="https://github.com/dan1hc/idd/blob/main/LICENSE">License (MIT)</a></li>
+  <li><a href="https://github.com/dan1hc/idd/blob/main/LICENSE">License (LGPL)</a></li>
 </ul>
 
 </body>

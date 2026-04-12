@@ -1,24 +1,28 @@
 # IDD: Intent-Driven Development
 
-Make AI coding tools follow your project's conventions — automatically.
+Give Copilot Chat a durable working memory for your repository.
 
-## The Problem
+IDD is a chat-first system. You install a small Markdown artifact set into the
+repo, Copilot Chat reads those files, and future work stays grounded in the same
+architecture, conventions, inventory, learned rules, and feature specs.
 
-AI coding assistants start every session with zero context about your project.
-They guess at formatting, create duplicate components, ignore your library wrappers,
-and produce code that *works* but doesn't *fit*.
+There is no runtime wrapper CLI in the active design.
+There is also no authoritative deterministic validator in the active design;
+artifact review is model-driven, evidence-backed, and expected to improve as
+models improve.
 
-## How It Works
-
-### 1. Install
+## Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash
 ```
 
-This scaffolds the IDD file tree, copies `instructions.md` to where AI tools
-already look, and auto-populates `.github/idd/conventions.json` through Copilot
-CLI.
+The installer:
+
+- creates `.github/idd/`
+- downloads `.github/copilot-instructions.md` and the feature template
+- scaffolds the top-level IDD artifacts if they do not exist yet
+- copies the same operating contract to `.cursorrules` and `CLAUDE.md` when possible
 
 | Tool | Reads from |
 |------|-----------|
@@ -26,75 +30,65 @@ CLI.
 | Claude Code | `CLAUDE.md` |
 | GitHub Copilot | `.github/copilot-instructions.md` |
 
-### 2. Build features
+## After Install
 
-Run tasks through IDD's Copilot CLI wrapper so the required artifacts are
-injected every time:
+Open Copilot Chat and use natural-language requests such as:
 
-```bash
-.github/idd/idd run --feature users-api "Add a POST /users endpoint with input validation."
+```text
+Discover this repository and populate the IDD context files.
+Create a feature spec for audit logging using the current IDD artifacts.
+Implement the active feature and update its glossary before finishing.
 ```
 
-The runner bundles your instructions, conventions, learned rules, and feature
-spec into a single prompt envelope for Copilot CLI. After the run, validate the
-feature artifacts:
+The operating contract for Chat lives in `.github/copilot-instructions.md`.
 
-```bash
-.github/idd/idd validate --feature users-api
-```
+## Artifact Model
 
-This shifts IDD from "hope the agent read the right files" to "inject the
-right files up front and fail validation when the artifacts drift."
+IDD now uses Markdown-first context files instead of JSON runtime artifacts.
 
-## Teaching Rules
+- `.github/idd/architecture.md`
+    system shape, runtime topology, integrations, and open questions
+- `.github/idd/conventions.md`
+    code style, boundaries, library patterns, and component placement
+- `.github/idd/inventory.md`
+    repository surfaces, entrypoints, routes, jobs, and discovery evidence
+- `.github/idd/learned.md`
+    explicit user-approved rules that override discovered conventions
+- `.github/idd/features/*.md`
+    bounded feature specs with acceptance criteria and glossary anchors
 
-Some things can't be detected — they're decisions your team made. Teach them:
-
-```bash
-.github/idd/idd learn --type forbid_import --glob "src/services/**/*.py" --module httpx \
-    --message "Use BaseClient from src/clients/base.py instead of raw httpx"
-
-.github/idd/idd learn --type forbid_import --glob "src/services/**/*.py" --module routes \
-    --message "Services must not import from routes"
-```
-
-Rules persist in `learned.json` as typed policy and are enforced by `idd validate`.
+The goal is to make the context easy for both humans and LLMs to read, edit,
+and diff.
 
 ## Feature Specs
 
-Feature files live in `.github/idd/features/`. Each one has acceptance criteria,
-constraints, and a **glossary** — a table of `file::symbol` anchors that records
-what was built where. The glossary is how AI remembers across sessions.
+Feature files live in `.github/idd/features/`. Each one records:
 
-Tell your AI tool to create a feature spec when starting new work.
+- what the feature does
+- acceptance criteria
+- constraints and dependencies
+- technical considerations
+- a glossary of stable `file::symbol` anchors
 
-## Refreshing Conventions
+The glossary is the feature-scoped memory that helps future agents find what was
+implemented.
 
-After changing formatters, linters, or project structure, run:
+## Installed File Tree
 
-```bash
-.github/idd/idd refresh-conventions
-```
-
-## File Tree
-
-```
-.github/idd/
-├── idd                     # CLI (init, learn, run, validate)
-├── instructions.md         # copied to AI tool locations
-├── conventions.json        # project conventions (AI-populated)
-├── learned.json            # human-confirmed rules
-├── features/
-│   ├── _template.md        # feature spec template
-│   └── *.md                # your feature specs
-├── prompts/
-│   ├── conventions.md      # prompt envelope for convention detection
-│   └── run.md              # prompt envelope for task runs
-└── schemas/
-    └── conventions.schema.json
+```text
+.github/
+├── copilot-instructions.md
+└── idd/
+    ├── architecture.md
+    ├── conventions.md
+    ├── inventory.md
+    ├── learned.md
+    └── features/
+        ├── _template.md
+        └── *.md
 ```
 
 ## License
 
-[MIT](LICENSE)
+[LGPL](LICENSE)
 
