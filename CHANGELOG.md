@@ -1,3 +1,11 @@
+# [1.7.0](https://github.com/dan1hc/idd/compare/v1.6.0...v1.7.0) (2026-04-12)
+
+
+### Features
+
+* make more explicit the rationale behind idd ([3ec91a6](https://github.com/dan1hc/idd/commit/3ec91a68e53ecf34a7c6ffb00d02305739cb23a3))
+* overhaul idd again for chat given model improvements ([8a9f40d](https://github.com/dan1hc/idd/commit/8a9f40d043f29cac9662b22a6af366c92f7d85bc))
+
 # [1.6.0](https://github.com/dan1hc/idd/compare/v1.5.0...v1.6.0) (2026-03-28)
 
 
