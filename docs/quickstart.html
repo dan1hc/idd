@@ -3,1056 +3,222 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>IDD - Quick Start</title>
+  <title>IDD — Quick Start</title>
   <style>
     :root {
-      --bg: #08111d;
-      --bg-soft: #10243a;
-      --surface: rgba(12, 27, 43, 0.82);
-      --surface-strong: #0f1f31;
-      --surface-warm: rgba(30, 25, 17, 0.78);
-      --line: rgba(126, 161, 192, 0.24);
-      --line-strong: rgba(240, 192, 101, 0.46);
-      --text: #eef3f7;
-      --muted: #adc0d5;
-      --gold: #f0c065;
-      --teal: #89d4cb;
-      --coral: #ff8f6b;
-      --berry: #f3d8cb;
-      --shadow: 0 30px 80px rgba(0, 0, 0, 0.32);
-      --radius-xl: 28px;
-      --radius-lg: 20px;
-      --radius-md: 14px;
-      --mono: "SF Mono", "Fira Code", "Source Code Pro", monospace;
-      --sans: "Avenir Next", "Trebuchet MS", sans-serif;
-      --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      --bg: #fbfaf6;
+      --paper: #ffffff;
+      --ink: #161616;
+      --ink-soft: #4a4a4a;
+      --muted: #7a7a78;
+      --rule: #e6e3d8;
+      --accent: #b3411a;
+      --code-bg: #1a1a1a;
+      --code-ink: #f4efe2;
+      --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      min-height: 100vh;
+    html, body {
+      background: var(--bg);
+      color: var(--ink);
       font-family: var(--sans);
-      color: var(--text);
+      font-size: 16px;
       line-height: 1.6;
-      background:
-        radial-gradient(circle at top left, rgba(240, 192, 101, 0.14), transparent 28%),
-        radial-gradient(circle at top right, rgba(137, 212, 203, 0.16), transparent 24%),
-        linear-gradient(160deg, #06101a 0%, #0b1725 36%, #091a2b 100%);
-      padding: 32px 20px 56px;
+      -webkit-font-smoothing: antialiased;
     }
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-      background-size: 28px 28px;
-      mask-image: radial-gradient(circle at center, black 34%, transparent 86%);
-      opacity: 0.34;
-    }
+    body { padding: 64px 24px 96px; }
 
-    main {
-      position: relative;
-      z-index: 1;
-      width: min(1120px, 100%);
-      margin: 0 auto;
-    }
+    main { max-width: 720px; margin: 0 auto; }
 
     a {
-      color: inherit;
+      color: var(--accent);
       text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 120ms ease;
     }
+    a:hover { border-bottom-color: var(--accent); }
 
     code {
       font-family: var(--mono);
       font-size: 0.92em;
-      color: #fff4db;
+      background: rgba(0,0,0,0.05);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--ink);
     }
 
     pre {
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 18px 20px;
+      border-radius: 6px;
       overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
+      line-height: 1.55;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
     }
 
-    .hero {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 34px;
-      padding: 32px;
-      background:
-        linear-gradient(135deg, rgba(15, 31, 49, 0.96), rgba(12, 21, 33, 0.92)),
-        linear-gradient(180deg, rgba(240, 192, 101, 0.08), rgba(137, 212, 203, 0.04));
-      box-shadow: var(--shadow);
-      isolation: isolate;
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      width: 420px;
-      height: 420px;
-      right: -90px;
-      top: -140px;
-      background: radial-gradient(circle, rgba(240, 192, 101, 0.2), transparent 68%);
-      z-index: -1;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(240, 192, 101, 0.28);
-      background: rgba(240, 192, 101, 0.08);
-      color: var(--gold);
+    .label {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-size: 0.74rem;
-      font-weight: 700;
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.85fr);
-      gap: 28px;
-      margin-top: 24px;
-      align-items: end;
-    }
-
-    h1,
-    h2,
-    h3 {
-      font-family: var(--serif);
-      font-weight: 700;
-      line-height: 1.05;
-      letter-spacing: -0.02em;
+      color: var(--muted);
+      margin-bottom: 12px;
     }
 
     h1 {
-      font-size: clamp(2.9rem, 7vw, 5.2rem);
-      max-width: 10ch;
-    }
-
-    .hero-copy p {
-      max-width: 58ch;
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 1.05rem;
-    }
-
-    .install-shell {
-      margin-top: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius-lg);
-      background: rgba(7, 15, 25, 0.7);
-      overflow: hidden;
-    }
-
-    .shell-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.22);
-    }
-
-    .dot:nth-child(1) { background: #ff8b7a; }
-    .dot:nth-child(2) { background: #ffd56c; }
-    .dot:nth-child(3) { background: #77d2a9; }
-
-    .install-shell pre {
-      padding: 18px 20px 22px;
-      color: #fff2d0;
-      font-size: 0.97rem;
-    }
-
-    .signal-panel {
-      display: grid;
-      gap: 14px;
-    }
-
-    .signal-card {
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius-lg);
-      padding: 18px 18px 20px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-      backdrop-filter: blur(16px);
-    }
-
-    .signal-card strong {
-      display: block;
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--teal);
-      margin-bottom: 8px;
-    }
-
-    .signal-card h3 {
-      font-size: 1.55rem;
-      margin-bottom: 8px;
-    }
-
-    .signal-card p {
-      color: var(--muted);
-      font-size: 0.97rem;
-    }
-
-    .hero-ribbon {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 22px;
-    }
-
-    .hero-ribbon .ribbon-item {
-      border-radius: 16px;
-      padding: 14px 16px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .hero-ribbon .label {
-      display: block;
-      color: var(--muted);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      margin-bottom: 6px;
-    }
-
-    .hero-ribbon .value {
-      font-size: 1rem;
+      font-size: 2.6rem;
       font-weight: 700;
-      color: #fff;
-    }
-
-    section {
-      margin-top: 28px;
-      border-radius: 30px;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      background: linear-gradient(180deg, rgba(13, 25, 39, 0.9), rgba(8, 18, 29, 0.94));
-      box-shadow: var(--shadow);
-      padding: 28px;
-    }
-
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .section-head p {
-      max-width: 58ch;
-      color: var(--muted);
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin-bottom: 18px;
     }
 
     h2 {
-      font-size: clamp(2rem, 4vw, 2.9rem);
-      margin-bottom: 10px;
-    }
-
-    .mode-switch {
-      display: inline-flex;
-      gap: 8px;
-      padding: 6px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.04);
-    }
-
-    .mode-button,
-    .flow-step {
-      cursor: pointer;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-    }
-
-    .mode-button {
-      padding: 10px 16px;
-      border-radius: 999px;
-      color: var(--muted);
-      font-weight: 700;
-      transition: background 180ms ease, color 180ms ease, transform 180ms ease;
-    }
-
-    .mode-button.active {
-      background: linear-gradient(135deg, rgba(240, 192, 101, 0.22), rgba(255, 143, 107, 0.22));
-      color: #fff6de;
-      transform: translateY(-1px);
-    }
-
-    .flow-layout {
-      display: grid;
-      grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.28fr);
-      gap: 22px;
-      align-items: start;
-    }
-
-    .flow-nav {
-      display: grid;
-      gap: 12px;
-    }
-
-    .flow-step {
-      width: 100%;
-      text-align: left;
-      padding: 16px 16px 18px;
-      border-radius: var(--radius-lg);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.04);
-      transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
-    }
-
-    .flow-step:hover {
-      transform: translateX(3px);
-      border-color: rgba(137, 212, 203, 0.4);
-    }
-
-    .flow-step.active {
-      background: linear-gradient(135deg, rgba(240, 192, 101, 0.16), rgba(137, 212, 203, 0.12));
-      border-color: var(--line-strong);
-      transform: translateX(5px);
-    }
-
-    .flow-step .step-number {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: var(--gold);
-      font-family: var(--mono);
-      font-size: 0.83rem;
-      margin-bottom: 10px;
-    }
-
-    .flow-step strong {
-      display: block;
-      font-size: 1rem;
-      color: #fff;
-      margin-bottom: 4px;
-    }
-
-    .flow-step span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .flow-panel {
-      border-radius: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
-      padding: 22px;
-      min-height: 500px;
-    }
-
-    .flow-kicker {
-      color: var(--teal);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-weight: 700;
-      font-size: 0.78rem;
-      margin-bottom: 12px;
+      color: var(--ink);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--rule);
     }
 
-    .flow-panel h3 {
-      font-size: 2rem;
-      margin-bottom: 10px;
+    .lede {
+      font-size: 1.1rem;
+      color: var(--ink-soft);
+      max-width: 56ch;
+      margin-bottom: 32px;
     }
 
-    .flow-panel p {
-      color: var(--muted);
-      max-width: 60ch;
-    }
+    section { margin-top: 56px; }
 
-    .flow-prompt,
-    .footprint-shell {
-      margin-top: 18px;
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(6, 13, 22, 0.7);
+    .steps {
+      list-style: none;
+      counter-reset: step;
     }
-
-    .flow-prompt pre,
-    .footprint-shell pre {
-      padding: 18px;
-      color: #fff2d5;
-      font-size: 0.95rem;
-    }
-
-    .meta-grid {
+    .steps li {
+      counter-increment: step;
+      padding: 18px 0;
+      border-top: 1px solid var(--rule);
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 18px;
-    }
-
-    .meta-card {
-      border-radius: 18px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .meta-card strong {
-      display: block;
-      color: #fff;
-      margin-bottom: 10px;
-      font-size: 0.96rem;
-    }
-
-    .chip-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      padding: 7px 11px;
-      border-radius: 999px;
-      background: rgba(137, 212, 203, 0.1);
-      border: 1px solid rgba(137, 212, 203, 0.18);
-      color: #dbfffa;
-      font-size: 0.84rem;
-    }
-
-    .meta-card p {
-      color: var(--muted);
-      font-size: 0.94rem;
-    }
-
-    .durability-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .durability-card {
-      position: relative;
-      overflow: hidden;
-      min-height: 220px;
-      border-radius: 22px;
-      padding: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: linear-gradient(160deg, rgba(14, 31, 48, 0.95), rgba(10, 20, 31, 0.92));
-    }
-
-    .durability-card::after {
-      content: "";
-      position: absolute;
-      inset: auto -24px -48px auto;
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(240, 192, 101, 0.22), transparent 68%);
-      pointer-events: none;
-    }
-
-    .durability-card .card-index {
-      display: inline-block;
-      margin-bottom: 16px;
-      color: var(--coral);
-      font-family: var(--mono);
-      font-size: 0.82rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
-    .durability-card h3 {
-      font-size: 1.5rem;
-      margin-bottom: 10px;
-    }
-
-    .durability-card p {
-      color: var(--muted);
-      max-width: 28ch;
-    }
-
-    .scale-rail {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 18px;
-    }
-
-    .rail-node {
-      position: relative;
-      padding: 18px 16px 20px;
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.04);
-      min-height: 180px;
-    }
-
-    .rail-node:not(:last-child)::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      right: -10px;
-      width: 20px;
-      height: 2px;
-      background: linear-gradient(90deg, rgba(240, 192, 101, 0.86), rgba(137, 212, 203, 0.6));
-    }
-
-    .rail-node strong {
-      display: block;
-      color: var(--gold);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 0.76rem;
-      margin-bottom: 12px;
-    }
-
-    .rail-node h3 {
-      font-size: 1.35rem;
-      margin-bottom: 10px;
-    }
-
-    .rail-node p {
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-
-    .footprint-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+      grid-template-columns: 36px 1fr;
       gap: 18px;
-      align-items: start;
+      align-items: baseline;
     }
-
-    .artifact-list {
-      display: grid;
-      gap: 12px;
+    .steps li:last-child { border-bottom: 1px solid var(--rule); }
+    .steps li::before {
+      content: counter(step, decimal-leading-zero);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
     }
-
-    .artifact-item {
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.04);
-      padding: 14px 16px;
-    }
-
-    .artifact-item strong {
+    .steps strong {
       display: block;
-      font-size: 0.96rem;
-      color: #fff;
+      font-weight: 600;
       margin-bottom: 4px;
     }
-
-    .artifact-item p {
-      color: var(--muted);
-      font-size: 0.93rem;
+    .steps p {
+      color: var(--ink-soft);
+      font-size: 0.96rem;
     }
 
-    .links {
+    .tree {
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 18px 20px;
+      font-family: var(--mono);
+      font-size: 0.86rem;
+      color: var(--ink-soft);
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+    .tree .key { color: var(--ink); font-weight: 600; }
+
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--rule);
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 18px;
+      gap: 24px;
+      font-size: 0.9rem;
+      color: var(--muted);
     }
 
-    .link-pill {
-      padding: 11px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.04);
-      color: #f6f6f6;
-      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-    }
-
-    .link-pill:hover {
-      transform: translateY(-2px);
-      border-color: rgba(137, 212, 203, 0.36);
-      background: rgba(137, 212, 203, 0.08);
-    }
-
-    .fade-in {
-      animation: rise 540ms ease both;
-    }
-
-    @keyframes rise {
-      from {
-        opacity: 0;
-        transform: translateY(16px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @media (max-width: 980px) {
-      .hero-grid,
-      .flow-layout,
-      .footprint-layout,
-      .durability-grid,
-      .scale-rail {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-ribbon {
-        grid-template-columns: 1fr;
-      }
-
-      .meta-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .rail-node:not(:last-child)::after {
-        top: auto;
-        bottom: -8px;
-        left: 50%;
-        right: auto;
-        width: 2px;
-        height: 16px;
-        transform: translateX(-50%);
-      }
-    }
-
-    @media (max-width: 720px) {
-      body {
-        padding: 18px 14px 40px;
-      }
-
-      .hero,
-      section {
-        padding: 22px;
-        border-radius: 24px;
-      }
-
-      h1 {
-        max-width: none;
-      }
-
-      .section-head {
-        align-items: start;
-        flex-direction: column;
-      }
-
-      .flow-panel {
-        min-height: auto;
-      }
+    @media (max-width: 540px) {
+      body { padding: 40px 20px 64px; }
+      h1 { font-size: 2rem; }
+      .steps li { grid-template-columns: 28px 1fr; gap: 12px; }
     }
   </style>
 </head>
 <body>
   <main>
-    <header class="hero fade-in">
-      <span class="eyebrow">Quick Start - Why IDD exists</span>
-      <div class="hero-grid">
-        <div class="hero-copy">
-          <h1>Make repo context compound instead of evaporate.</h1>
-          <p>
-            IDD gives Copilot Chat a durable contract and a bounded artifact set inside the repository.
-            Instead of re-explaining the system in every session, you keep architecture, conventions,
-            inventory, learned rules, and feature memory in the repo itself. The north star is to keep
-            feature specs current so they can guide both code execution and later maintenance. This is
-            for software intent what IaC was for infrastructure: a durable layer that compounds as the
-            models get better.
-          </p>
-          <div class="install-shell">
-            <div class="shell-bar">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span>bootstrap</span>
-            </div>
-            <pre><code>curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash</code></pre>
-          </div>
-          <div class="hero-ribbon">
-            <div class="ribbon-item">
-              <span class="label">Interface</span>
-              <span class="value">Copilot Chat</span>
-            </div>
-            <div class="ribbon-item">
-              <span class="label">Contract</span>
-              <span class="value">.github/copilot-instructions.md</span>
-            </div>
-            <div class="ribbon-item">
-              <span class="label">North star</span>
-              <span class="value">Feature specs</span>
-            </div>
-          </div>
-        </div>
+    <span class="label">IDD · Quick Start</span>
+    <h1>Write applications, not source code.</h1>
+    <p class="lede">
+      IDD is a repo-native contract for describing software in natural
+      language. You and Copilot maintain the intent; the model maintains
+      the code. It is dramatically more productive than hand-writing every
+      line, and it gets better every time the model does.
+    </p>
 
-        <aside class="signal-panel">
-          <article class="signal-card">
-            <strong>Why it exists</strong>
-            <h3>Chat memory dies. Repo memory does not.</h3>
-            <p>
-              IDD moves critical context out of transient conversation state and into files that survive across sessions,
-              contributors, and model generations.
-            </p>
-          </article>
-          <article class="signal-card">
-            <strong>Why it matters</strong>
-            <h3>This is an IaC moment for software intent.</h3>
-            <p>
-              Infrastructure changed when intent became durable and executable. IDD applies the same shift to application
-              development: feature specs become the maintained layer models build from and maintain against.
-            </p>
-          </article>
-        </aside>
-      </div>
-    </header>
-
-    <section class="fade-in" style="animation-delay: 100ms;">
-      <div class="section-head">
-        <div>
-          <h2>How IDD works</h2>
-          <p>
-            Switch between brownfield and greenfield and click through the flow. The feature spec is the hinge between
-            repository understanding and source-code work, so the page updates the active prompt, artifacts touched,
-            and why each step matters.
-          </p>
-        </div>
-        <div class="mode-switch" role="tablist" aria-label="Repository mode">
-          <button class="mode-button active" data-mode="brownfield" aria-selected="true">Brownfield</button>
-          <button class="mode-button" data-mode="greenfield" aria-selected="false">Greenfield</button>
-        </div>
-      </div>
-
-      <div class="flow-layout">
-        <div class="flow-nav" id="flow-nav"></div>
-
-        <article class="flow-panel" aria-live="polite">
-          <div class="flow-kicker" id="flow-kicker"></div>
-          <h3 id="flow-title"></h3>
-          <p id="flow-summary"></p>
-
-          <div class="flow-prompt">
-            <pre><code id="flow-prompt"></code></pre>
-          </div>
-
-          <div class="meta-grid">
-            <div class="meta-card">
-              <strong>Artifacts touched</strong>
-              <div class="chip-row" id="flow-artifacts"></div>
-            </div>
-            <div class="meta-card">
-              <strong>Why this matters</strong>
-              <p id="flow-why"></p>
-            </div>
-          </div>
-        </article>
-      </div>
+    <section>
+      <h2>Install</h2>
+      <pre><code>curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash</code></pre>
     </section>
 
-    <section class="fade-in" style="animation-delay: 180ms;">
-      <div class="section-head">
-        <div>
-          <h2>Why IDD is durable</h2>
-          <p>
-            IDD is not trying to freeze intelligence into a wrapper. It keeps stable repository memory close to the code,
-            so improved models can keep extracting more value from the same substrate. That makes it closer to a new
-            engineering layer than a conventional productivity feature.
-          </p>
-        </div>
-      </div>
-
-      <div class="durability-grid">
-        <article class="durability-card">
-          <span class="card-index">01 - Repo memory</span>
-          <h3>Context survives the session.</h3>
-          <p>
-            Architecture, conventions, inventory, learned rules, and features live in the repo. The next chat session starts with structure instead of amnesia.
-          </p>
-        </article>
-        <article class="durability-card">
-          <span class="card-index">02 - Bounded surfaces</span>
-          <h3>Feature specs steer execution.</h3>
-          <p>
-            The active feature spec becomes the execution contract for the work. Copilot implements from it and later maintenance returns to it.
-          </p>
-        </article>
-        <article class="durability-card">
-          <span class="card-index">03 - Model leverage</span>
-          <h3>Capability scales with each model generation.</h3>
-          <p>
-            Better models can infer more from the same contract, write tighter feature specs, and deliver stronger implementation, review, and maintenance without changing the product shape.
-          </p>
-        </article>
-      </div>
-
-      <div class="scale-rail" aria-label="Why IDD scales over time">
-        <article class="rail-node">
-          <strong>Layer 1</strong>
-          <h3>Contract in repo</h3>
-          <p>The operating rules live in <code>.github/copilot-instructions.md</code>, not in a shell wrapper.</p>
-        </article>
-        <article class="rail-node">
-          <strong>Layer 2</strong>
-          <h3>Intent becomes durable</h3>
-          <p>Each repo builds durable context in <code>architecture.md</code>, <code>conventions.md</code>, <code>inventory.md</code>, and especially maintained feature specs.</p>
-        </article>
-        <article class="rail-node">
-          <strong>Layer 3</strong>
-          <h3>Models get stronger</h3>
-          <p>New model generations read the same artifacts with better judgment, synthesis, and recall.</p>
-        </article>
-        <article class="rail-node">
-          <strong>Layer 4</strong>
-          <h3>A new paradigm emerges</h3>
-          <p>The repo becomes easier to understand, decompose, implement, and review over time. That is why this is closer to IaC for application intent than to ordinary prompt engineering.</p>
-        </article>
-      </div>
+    <section>
+      <h2>Flow</h2>
+      <ol class="steps">
+        <li><div><strong>Install</strong><p>Bootstraps the operating contract and the IDD artifact set.</p></div></li>
+        <li><div><strong>Bootstrap</strong><p>Run <code>/idd-init</code> for a new repo, or <code>/idd-discover</code> against an existing one. Copilot seeds architecture, conventions, and the first wiki entries.</p></div></li>
+        <li><div><strong>Think in the wiki</strong><p>You and Copilot flesh out a concept, subsystem, or feature as one or more wiki entries. This is the design surface. No code yet.</p></div></li>
+        <li><div><strong>Derive feature specs</strong><p>Run <code>/idd-feature</code>. The wiki entry holds the concept; each feature spec is one bounded change to it. A wiki entry can spawn many feature specs over time — initial build, additions, refactors.</p></div></li>
+        <li><div><strong>Execute</strong><p>Copilot works through specs sequentially under Red / Green TDD, then writes back so prose follows source.</p></div></li>
+        <li><div><strong>Review</strong><p>Run <code>/idd-lint</code> on demand to sweep for drift, duplicates, orphans, and broken anchors.</p></div></li>
+      </ol>
     </section>
 
-    <section class="fade-in" style="animation-delay: 260ms;">
-      <div class="section-head">
-        <div>
-          <h2>Installed footprint</h2>
-          <p>
-            The footprint stays intentionally small. One contract file tells Copilot how to operate, and the rest is repository memory.
-          </p>
-        </div>
-      </div>
-
-      <div class="footprint-layout">
-        <div class="footprint-shell">
-          <pre class="tree"><code>.github/
+    <section>
+      <h2>Footprint</h2>
+<div class="tree"><span class="key">.github/</span>
 ├── copilot-instructions.md
+├── prompts/
+│   ├── idd-discover.prompt.md
+│   ├── idd-init.prompt.md
+│   ├── idd-feature.prompt.md
+│   └── idd-lint.prompt.md
 └── idd/
     ├── architecture.md
     ├── conventions.md
-    ├── inventory.md
     ├── learned.md
-    └── features/
-        ├── _template.md
-        └── *.md</code></pre>
-        </div>
-
-        <div class="artifact-list">
-          <article class="artifact-item">
-            <strong>.github/copilot-instructions.md</strong>
-            <p>The canonical operating contract Copilot reads first.</p>
-          </article>
-          <article class="artifact-item">
-            <strong>.github/idd/architecture.md</strong>
-            <p>System shape, runtime topology, integrations, and open questions.</p>
-          </article>
-          <article class="artifact-item">
-            <strong>.github/idd/conventions.md</strong>
-            <p>Code boundaries, style, library patterns, and component placement.</p>
-          </article>
-          <article class="artifact-item">
-            <strong>.github/idd/inventory.md</strong>
-            <p>Repository evidence, modules, entrypoints, routes, and jobs.</p>
-          </article>
-          <article class="artifact-item">
-            <strong>.github/idd/features/*.md</strong>
-            <p>The primary planning and execution layer, with glossary anchors that reconnect future maintenance to the right code.</p>
-          </article>
-        </div>
-      </div>
-
-      <div class="links">
-        <a class="link-pill" href="https://github.com/dan1hc/idd">GitHub</a>
-        <a class="link-pill" href="https://github.com/dan1hc/idd/blob/main/README.md">Full README</a>
-        <a class="link-pill" href="https://github.com/dan1hc/idd/blob/main/LICENSE">License (LGPL)</a>
-      </div>
+    ├── wiki/
+    └── features/</div>
     </section>
+
+    <footer>
+      <a href="https://github.com/dan1hc/idd">GitHub</a>
+      <a href="https://github.com/dan1hc/idd/blob/main/README.md">README</a>
+      <a href="https://github.com/dan1hc/idd/blob/main/LICENSE">License</a>
+    </footer>
   </main>
-
-  <script>
-    const flowByMode = {
-      brownfield: [
-        {
-          label: "Install",
-          kicker: "Step 01 - Bootstrap",
-          title: "Install the contract once.",
-          summary: "Install IDD into the repository so Copilot starts from a real contract and a named artifact layout instead of a blank slate.",
-          prompt: "curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash",
-          artifacts: [".github/copilot-instructions.md", ".github/idd/architecture.md", ".github/idd/conventions.md", ".github/idd/inventory.md", ".github/idd/learned.md"],
-          why: "The repo gets a durable contract before any discovery work happens."
-        },
-        {
-          label: "Discover",
-          kicker: "Step 02 - Ground truth",
-          title: "Read the repository before guessing.",
-          summary: "In brownfield mode, the first real move is to inspect manifests, workflows, representative files, and existing boundaries, then capture that evidence into the IDD artifacts.",
-          prompt: "Discover this repository and populate the IDD context files.",
-          artifacts: ["inventory.md", "conventions.md", "architecture.md"],
-          why: "Repository evidence is more stable than whatever the user remembers in the moment."
-        },
-        {
-          label: "Specify",
-          kicker: "Step 03 - Bound the work",
-          title: "Turn context into a bounded feature.",
-          summary: "Once the repo is understood, create one feature spec with clear acceptance criteria, dependencies, and glossary expectations. That feature spec becomes the execution contract for the work.",
-          prompt: "Create a feature spec for audit logging using the current IDD artifacts.",
-          artifacts: ["features/*.md", "inventory.md", "conventions.md"],
-          why: "Feature specs are the north star: they bind intent, scope, and later maintenance to the same artifact."
-        },
-        {
-          label: "Implement",
-          kicker: "Step 04 - Build against memory",
-          title: "Write code against the repo contract.",
-          summary: "Copilot uses the contract, repo artifacts, and active feature spec together, so implementation follows the feature intent and repository shape instead of improvising a new one.",
-          prompt: "Implement the active feature and update its glossary before finishing.",
-          artifacts: ["copilot-instructions.md", "conventions.md", "learned.md", "features/*.md"],
-          why: "Source code execution is driven by the active feature spec rather than by an isolated prompt."
-        },
-        {
-          label: "Review",
-          kicker: "Step 05 - Refresh",
-          title: "Review artifacts as part of the work.",
-          summary: "After implementation, the repo artifacts stay aligned: glossary anchors, feature state, and any affected architecture or conventions get refreshed when the code implies drift.",
-          prompt: "Review the IDD artifacts for consistency with the implemented work and update anything stale.",
-          artifacts: ["features/*.md", "architecture.md", "conventions.md", "inventory.md"],
-          why: "Glossary anchors and feature context keep later maintenance connected to the original intent."
-        }
-      ],
-      greenfield: [
-        {
-          label: "Install",
-          kicker: "Step 01 - Bootstrap",
-          title: "Install the contract once.",
-          summary: "Install IDD so the repo starts with a named operating contract and a small Markdown artifact set ready for planning.",
-          prompt: "curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash",
-          artifacts: [".github/copilot-instructions.md", ".github/idd/architecture.md", ".github/idd/conventions.md", ".github/idd/inventory.md", ".github/idd/learned.md"],
-          why: "Greenfield work still benefits from a stable contract before code exists."
-        },
-        {
-          label: "Frame",
-          kicker: "Step 02 - Shape the system",
-          title: "Create architecture before implementation.",
-          summary: "In greenfield mode, ask for system shape, constraints, major surfaces, integrations, and the first meaningful feature, then write that into the architecture artifact.",
-          prompt: "Set up IDD for a greenfield product with a web app, an API, and the first feature we should build.",
-          artifacts: ["architecture.md", "conventions.md"],
-          why: "The first design conversation becomes durable repo memory instead of disappearing into chat history."
-        },
-        {
-          label: "Specify",
-          kicker: "Step 03 - Bound the first feature",
-          title: "Create the feature before creating the code.",
-          summary: "Generate a bounded feature file with acceptance criteria, dependencies, out-of-scope items, and the intended implementation contour. That feature spec becomes the execution contract for the first build.",
-          prompt: "Create the first feature spec from the current architecture and constraints.",
-          artifacts: ["features/*.md", "architecture.md"],
-          why: "Feature specs are the north star: code quality improves when intent is explicit before implementation starts."
-        },
-        {
-          label: "Implement",
-          kicker: "Step 04 - Build with structure",
-          title: "Implement from the feature and contract.",
-          summary: "Copilot reads the repo contract, architecture, conventions, learned rules, and active feature spec together while code is still fresh and simple.",
-          prompt: "Implement the active feature and keep the glossary aligned with the code you create.",
-          artifacts: ["copilot-instructions.md", "architecture.md", "conventions.md", "features/*.md"],
-          why: "Execution follows the active feature spec, not just the latest prompt wording."
-        },
-        {
-          label: "Review",
-          kicker: "Step 05 - Keep memory fresh",
-          title: "Let every task enrich the repo memory.",
-          summary: "As the system grows, the repo artifacts stop being scaffolding and become the durable memory layer that future model generations inherit.",
-          prompt: "Review the IDD artifacts for consistency with the implemented feature and refresh anything stale.",
-          artifacts: ["features/*.md", "architecture.md", "conventions.md", "inventory.md"],
-          why: "Glossary anchors and feature context make later maintenance start from feature intent instead of archaeology."
-        }
-      ]
-    };
-
-    const nav = document.getElementById("flow-nav");
-    const modeButtons = Array.from(document.querySelectorAll(".mode-button"));
-    const flowKicker = document.getElementById("flow-kicker");
-    const flowTitle = document.getElementById("flow-title");
-    const flowSummary = document.getElementById("flow-summary");
-    const flowPrompt = document.getElementById("flow-prompt");
-    const flowArtifacts = document.getElementById("flow-artifacts");
-    const flowWhy = document.getElementById("flow-why");
-
-    let currentMode = "brownfield";
-    let currentStep = 0;
-
-    function renderNav() {
-      nav.innerHTML = "";
-      flowByMode[currentMode].forEach((step, index) => {
-        const button = document.createElement("button");
-        button.className = "flow-step" + (index === currentStep ? " active" : "");
-        button.type = "button";
-        button.setAttribute("aria-pressed", index === currentStep ? "true" : "false");
-        button.innerHTML = `
-          <span class="step-number">0${index + 1}</span>
-          <strong>${step.label}</strong>
-          <span>${step.title}</span>
-        `;
-        button.addEventListener("click", () => {
-          currentStep = index;
-          render();
-        });
-        nav.appendChild(button);
-      });
-    }
-
-    function renderPanel() {
-      const step = flowByMode[currentMode][currentStep];
-      flowKicker.textContent = step.kicker;
-      flowTitle.textContent = step.title;
-      flowSummary.textContent = step.summary;
-      flowPrompt.textContent = step.prompt;
-      flowWhy.textContent = step.why;
-      flowArtifacts.innerHTML = "";
-      step.artifacts.forEach((artifact) => {
-        const chip = document.createElement("span");
-        chip.className = "chip";
-        chip.textContent = artifact;
-        flowArtifacts.appendChild(chip);
-      });
-    }
-
-    function render() {
-      modeButtons.forEach((button) => {
-        const active = button.dataset.mode === currentMode;
-        button.classList.toggle("active", active);
-        button.setAttribute("aria-selected", active ? "true" : "false");
-      });
-      renderNav();
-      renderPanel();
-    }
-
-    modeButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        currentMode = button.dataset.mode;
-        currentStep = 0;
-        render();
-      });
-    });
-
-    render();
-  </script>
 </body>
 </html>

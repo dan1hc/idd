@@ -1,64 +1,92 @@
 # IDD: Intent-Driven Development
 
-[![North Star: Feature Specs](https://img.shields.io/badge/North%20Star-Feature%20Specs-0f766e?style=for-the-badge)](#north-star)
+[![North Star: Wiki → Specs → Code](https://img.shields.io/badge/North%20Star-Wiki%20%E2%86%92%20Specs%20%E2%86%92%20Code-0f766e?style=for-the-badge)](#north-star)
 [![Interface: Copilot Chat](https://img.shields.io/badge/Interface-Copilot%20Chat-1d4ed8?style=for-the-badge)](#use-it-in-chat)
 [![Artifacts: Markdown First](https://img.shields.io/badge/Artifacts-Markdown%20First-d97706?style=for-the-badge)](#artifact-model)
 [![Paradigm: IaC for Software Intent](https://img.shields.io/badge/Paradigm-IaC%20for%20Software%20Intent-b91c1c?style=for-the-badge)](#why-this-matters)
 [![License: LGPL-3.0](https://img.shields.io/badge/License-LGPL--3.0-111827?style=for-the-badge)](#license)
 
-Make repo context compound instead of evaporate.
+Write applications, not source code.
 
-IDD gives Copilot Chat a durable operating contract and a bounded artifact set
-inside the repository. Instead of re-explaining the system in every session,
-you keep architecture, conventions, inventory, learned rules, and feature
-memory in the repo itself.
+IDD is a repo-native contract for describing software in natural language.
+You and Copilot maintain the intent — a wiki of concepts, feature specs,
+architecture, conventions, learned rules — and the model maintains the
+code. It is dramatically more productive than hand-writing every line,
+and it gets better every time the model does.
 
 > IDD is not a runtime wrapper around the model.
 >
-> IDD is a repo-native contract and memory layer that better model generations
-> can keep exploiting more effectively over time.
-
+> IDD is the natural-language layer where applications are now authored,
+> reviewed, and maintained. Source code becomes a compiled artifact of
+> the intent stored in the repo.
 ## North Star
 
-The north star for AI-driven development in IDD is not raw code generation.
+Intent in IDD flows in one direction: **wiki → feature specs → execution →
+write-back**.
 
-The north star is developing and maintaining feature specs, with Copilot's
-assistance, so those specs can guide both source-code execution and later source
-maintenance.
+- You and Copilot think in the wiki. A concept, subsystem, or feature is
+  fleshed out as one or more wiki entries before any code is written.
+- Copilot derives feature specs from those wiki entries. A wiki entry
+  holds the durable concept; feature specs are Copilot's instructions
+  for implementing or modifying it. A single wiki entry can spawn many
+  feature specs over its lifetime — one per bounded change.
+- Copilot executes specs sequentially under Red / Green TDD, then writes
+  back so wiki and specs follow source.
+- Later maintenance starts from the same wiki + spec pair, not from
+  guesswork.
 
 This is for software intent what IaC was for infrastructure: a durable,
 reviewable, executable layer that compounds as the tooling gets better.
 
-In practice that means:
-
-- Copilot helps create or refresh the active feature spec before major code work.
-- The active feature spec informs implementation scope, behavior, and constraints.
-- The glossary anchors in that feature spec become the stable link back into the code.
-- Later maintenance work starts from the feature spec and glossary, not from guesswork.
-
 ## Why IDD Exists
 
-Without a repo contract, AI coding sessions start cold.
+Hand-writing source code is the slow path. Asking a fresh chat to
+regenerate it every session is the brittle path. IDD is the path where
+the application lives as maintained intent and the model keeps the code
+in sync.
 
-| Without IDD | With IDD |
-|---|---|
-| Context lives in transient chat history | Context lives in stable repo artifacts |
-| New sessions re-discover the system from scratch | New sessions inherit architecture, conventions, inventory, and features |
-| Prompts sprawl into ad hoc instructions | Work is grounded in named Markdown files with clear roles |
-| Better models still waste effort rebuilding context | Better models get more leverage from the same repository memory |
+| Hand-written code | Cold AI chat | With IDD |
+|---|---|---|
+| Intent only lives in the author's head | Intent only lives in the transient prompt | Intent lives in versioned Markdown the team owns |
+| Maintenance means re-reading source | Maintenance restarts from zero context | Maintenance restarts from wiki + feature specs |
+| Refactors break unwritten assumptions | Refactors break what the chat forgot | Refactors update intent first; code follows |
+| Productivity capped by typing speed | Productivity capped by re-explaining context | Productivity capped by how fast you can think clearly |
 
 ## How IDD Works
 
 ```mermaid
 flowchart LR
     install["Install IDD"] --> contract[".github/copilot-instructions.md"]
-    install --> context["Architecture / Conventions / Inventory / Learned"]
-    contract --> feature["Feature spec + glossary"]
-    context --> feature
-    chat["Copilot Chat"] --> feature
+    install --> context["Architecture / Conventions / Learned"]
+    chat["Copilot Chat"] --> wiki["Wiki entries (concept layer)"]
+    context --> wiki
+    wiki --> feature["Feature spec + glossary"]
+    contract --> feature
     feature --> code["Implement / maintain source code"]
-    code --> feature
+    code --> writeback["Write-back: prose follows source"]
+    writeback --> wiki
+    writeback --> feature
 ```
+
+The wiki is where new intent enters the system. You and Copilot work a
+concept into one or more wiki entries first; Copilot then breaks that into
+bounded feature specs for execution. The three anchor forms IDD uses to
+link these layers are:
+
+- `code::<path>::<symbol>` for stable code or Markdown anchors
+- `feature::<feature-id>::ac-N` for numbered acceptance criteria
+- `wiki::<topic>::<section>` for sections inside wiki entries
+
+Discovery and large sweeps are dispatched to read-only sub-agents; the main
+agent is the only writer. After every code-changing task, a write-back pass
+repairs anchors and prose so docs match the code.
+
+Four user-initiated slash commands drive the workflow:
+
+- `/idd-discover` — brownfield: seed architecture, conventions, and wiki entries from existing code.
+- `/idd-init` — greenfield: interview the user and write the first artifacts.
+- `/idd-feature` — derive a bounded feature spec from a wiki entry.
+- `/idd-lint` — repo-wide sweep for drift, duplicates, orphans, and broken anchors.
 
 The repository contract stays stable while the models improve. That is the
 durable part of the design: the better the model gets, the more value it can
@@ -68,7 +96,7 @@ applications without rebuilding context from scratch.
 ## Why It Scales
 
 1. The operating rules live in the repo, not in a shell wrapper.
-2. Feature specs turn intent into a stable execution surface instead of a transient prompt.
+2. The wiki captures concepts once; feature specs derive from it.
 3. Each task can refresh repository memory instead of letting it decay.
 4. New model generations can read the same files with better judgment,
    synthesis, and consistency review.
@@ -76,15 +104,24 @@ applications without rebuilding context from scratch.
 
 ## Why This Matters
 
-This is not just a better prompting workflow.
+This is not just a better prompting workflow. It is a change in what a
+software engineer's day-to-day artifact is.
 
-It is a change in where engineering intent lives.
-
-- IaC made infrastructure declarative, reviewable, and automatable. IDD does the same for application intent.
-- Teams can iterate on products with unusual speed because the agent starts from maintained feature contracts instead of cold-start rediscovery.
-- Each new LLM generation increases the value extracted from the same repository memory instead of forcing a process reset.
-- Initial implementation and later maintenance run through the same feature artifact, so velocity does not collapse after greenfield codegen.
-- The repository becomes a durable substrate for human and agent collaboration, which is why this looks like a new engineering paradigm rather than a temporary tooling layer.
+- The unit of work moves up the stack: from lines of code to wiki entries
+  and feature specs written in plain English.
+- IaC made infrastructure declarative, reviewable, and automatable. IDD does the same for application logic.
+- Teams ship product faster because the agent starts from maintained
+  intent instead of cold-start rediscovery, and humans review meaning
+  instead of syntax.
+- Each new LLM generation extracts more value from the same repository
+  memory — the natural-language artifacts don't need to change for the
+  output to improve.
+- Initial implementation and later maintenance run through the same
+  wiki and feature artifacts, so velocity does not collapse after the
+  greenfield burst.
+- The repository becomes a durable substrate for human and agent
+  collaboration. That is why this is a paradigm shift, not a tooling
+  layer.
 
 ## Install
 
@@ -105,75 +142,59 @@ The installer:
 | Claude Code | `CLAUDE.md` |
 | GitHub Copilot | `.github/copilot-instructions.md` |
 
-## Use It In Chat
-
-The canonical operating contract for Copilot Chat lives in
-`.github/copilot-instructions.md`.
-
-### Brownfield
-
-```text
-Discover this repository and populate the IDD context files.
-Create a bounded feature spec for audit logging using the current IDD artifacts.
-Implement the active feature and update its glossary before finishing.
-Review the IDD artifacts for consistency with the implemented work.
-```
-
-### Greenfield
-
-```text
-Set up IDD for a greenfield product with a web app, an API, and the first feature we should build.
-Create the first feature spec from the current architecture and constraints.
-Implement the active feature and keep the glossary aligned with the code you create.
-Review the IDD artifacts for consistency with the implemented feature.
-```
-
 ## Artifact Model
 
-IDD uses Markdown-first context files instead of JSON runtime artifacts.
+IDD uses Markdown-first context files the team owns and edits.
 
 | File | Purpose |
 |---|---|
 | `.github/copilot-instructions.md` | Canonical operating contract for Copilot Chat |
 | `.github/idd/architecture.md` | System shape, runtime topology, integrations, and open questions |
 | `.github/idd/conventions.md` | Code style, boundaries, library patterns, and component placement |
-| `.github/idd/inventory.md` | Repository surfaces, entrypoints, routes, jobs, and evidence |
+| `.github/idd/wiki/*.md` | Durable concept map: bounded entries that feature specs and the contract anchor at |
 | `.github/idd/learned.md` | Explicit user-approved rules that override discovered conventions |
 | `.github/idd/features/*.md` | The primary planning and execution layer: bounded feature specs with acceptance criteria and glossary anchors |
+| `.github/prompts/idd-discover.prompt.md` | On-demand `/idd-discover` command for brownfield discovery |
+| `.github/prompts/idd-init.prompt.md` | On-demand `/idd-init` command for greenfield bootstrap |
+| `.github/prompts/idd-feature.prompt.md` | On-demand `/idd-feature` command to derive a feature spec from a wiki entry |
+| `.github/prompts/idd-lint.prompt.md` | On-demand `/idd-lint` command for repo-wide drift, duplicate, orphan, and broken-anchor sweeps |
 
 ## Why Feature Specs Matter
 
-Feature specs are the working center of IDD.
+The wiki is where new intent enters the system. Feature specs are where
+that intent becomes executable.
 
-They are where intent stops being conversational and starts becoming durable.
-
-Feature files live in `.github/idd/features/`. Each one records:
+A feature spec turns a wiki concept into a bounded slice the model can
+implement and maintain. Each one records:
 
 - what the feature does
 - acceptance criteria
 - constraints and dependencies
 - technical considerations
-- a glossary of stable `file::symbol` anchors
+- a glossary of stable anchors back into source code
 
-The feature spec guides implementation.
+The spec guides implementation. The glossary lets the next session —
+human or model — reconnect the code to the intent that justified it.
 
-The glossary is what lets later maintenance reconnect that implementation back
-to the feature that justified it.
-
-That is why feature specs are more than planning notes. They are the durable
-intent layer that lets engineering speed and engineering capability scale with
-the model frontier.
+That is why feature specs are more than planning notes. They are the
+durable execution contract that lets a team write applications instead
+of source code, and keep doing so as the model frontier moves.
 
 ## Installed Footprint
 
 ```text
 .github/
 ├── copilot-instructions.md
+├── prompts/│   ├── idd-discover.prompt.md
+│   ├── idd-init.prompt.md
+│   ├── idd-feature.prompt.md│   └── idd-lint.prompt.md
 └── idd/
     ├── architecture.md
     ├── conventions.md
-    ├── inventory.md
     ├── learned.md
+    ├── wiki/
+    │   ├── _template.md
+    │   └── *.md
     └── features/
         ├── _template.md
         └── *.md

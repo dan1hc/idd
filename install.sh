@@ -145,53 +145,8 @@ EOF
 EOF
 			;;
 		inventory)
-			cat > "$dest" <<'EOF'
-# Inventory
-
-## Summary
-
-[repository surface summary]
-
-## Projects
-
-| Name | Path | Role | Notes |
-|------|------|------|-------|
-|      |      |      |       |
-
-## Modules
-
-| Name | Path | Role | Notes |
-|------|------|------|-------|
-|      |      |      |       |
-
-## Entrypoints
-
-| Name | Path | Type | Notes |
-|------|------|------|-------|
-|      |      |      |       |
-
-## Routes
-
-| Route | Method | Path | Notes |
-|-------|--------|------|-------|
-|       |        |      |       |
-
-## Data Models
-
-| Name | Path | Type | Notes |
-|------|------|------|-------|
-|      |      |      |       |
-
-## Jobs
-
-| Name | Path | Trigger | Notes |
-|------|------|---------|-------|
-|      |      |         |       |
-
-## Evidence
-
-- [supporting file, manifest, workflow, or doc]
-EOF
+			echo "Scaffold template 'inventory' is retired; wiki entries replace it." >&2
+			exit 1
 			;;
 		learned)
 			cat > "$dest" <<'EOF'
@@ -225,7 +180,7 @@ echo ""
 echo -e "${BOLD}Installing IDD${NC}"
 echo ""
 
-mkdir -p .github/idd/features .github
+mkdir -p .github/idd/features .github/idd/wiki .github/prompts
 
 echo -e "  ${BLUE}→${NC} Downloading instructions..."
 download ".github/copilot-instructions.md" ".github/copilot-instructions.md"
@@ -233,10 +188,18 @@ download ".github/copilot-instructions.md" ".github/copilot-instructions.md"
 echo -e "  ${BLUE}→${NC} Downloading feature template..."
 download ".github/idd/features/_template.md" ".github/idd/features/_template.md"
 
+echo -e "  ${BLUE}→${NC} Downloading wiki template..."
+download ".github/idd/wiki/_template.md" ".github/idd/wiki/_template.md"
+
+echo -e "  ${BLUE}→${NC} Downloading slash-command prompts..."
+download ".github/prompts/idd-discover.prompt.md" ".github/prompts/idd-discover.prompt.md"
+download ".github/prompts/idd-init.prompt.md" ".github/prompts/idd-init.prompt.md"
+download ".github/prompts/idd-feature.prompt.md" ".github/prompts/idd-feature.prompt.md"
+download ".github/prompts/idd-lint.prompt.md" ".github/prompts/idd-lint.prompt.md"
+
 echo -e "  ${BLUE}→${NC} Scaffolding artifact files..."
 write_if_missing ".github/idd/architecture.md" "architecture"
 write_if_missing ".github/idd/conventions.md" "conventions"
-write_if_missing ".github/idd/inventory.md" "inventory"
 write_if_missing ".github/idd/learned.md" "learned"
 
 echo -e "  ${BLUE}→${NC} Copying instructions to AI tool locations..."
@@ -246,10 +209,11 @@ cp ".github/copilot-instructions.md" "CLAUDE.md" 2>/dev/null || true
 echo ""
 echo -e "${GREEN}✓${NC} IDD installed successfully!"
 echo ""
-echo 'Open Copilot Chat and start with one of these prompts:'
-echo '  - Discover this repository and populate the IDD context files.'
-echo '  - Create a feature spec for the first feature I should implement.'
-echo '  - Implement the active feature and update its glossary before finishing.'
+echo 'Open Copilot Chat and invoke one of the IDD slash commands:'
+echo '  - /idd-init       Bootstrap a new repository.'
+echo '  - /idd-discover   Seed artifacts from an existing repository.'
+echo '  - /idd-feature    Derive a bounded feature spec from a wiki entry.'
+echo '  - /idd-lint       Sweep for drift, duplicates, orphans, and broken anchors.'
 echo ""
 echo -e "Docs: ${BLUE}https://dan1hc.github.io/idd${NC}"
 echo ""

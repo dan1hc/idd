@@ -4,9 +4,6 @@ You are operating under IDD.
 Primary interface: Copilot Chat.
 Authoritative inputs: this file and the Markdown files under `.github/idd/`.
 
-Ignore legacy JSON artifacts, prompt templates, shell wrapper flows, and legacy
-copies of this contract if they still exist during refactors.
-
 ---
 
 ## §0 Artifact Set
@@ -16,19 +13,25 @@ These are the authoritative IDD files:
 - `.github/copilot-instructions.md`
 - `.github/idd/architecture.md`
 - `.github/idd/conventions.md`
-- `.github/idd/inventory.md`
 - `.github/idd/learned.md`
+- `.github/idd/wiki/_template.md`
+- `.github/idd/wiki/*.md`
 - `.github/idd/features/_template.md`
 - `.github/idd/features/*.md`
+- `.github/prompts/idd-discover.prompt.md`
+- `.github/prompts/idd-init.prompt.md`
+- `.github/prompts/idd-feature.prompt.md`
+- `.github/prompts/idd-lint.prompt.md`
 
-If one of the four top-level Markdown artifacts is missing, recreate it with the
-standard headings below before continuing.
+If one of the top-level Markdown artifacts (`architecture.md`,
+`conventions.md`, `learned.md`) is missing, recreate it with the standard
+headings below before continuing.
 
 Artifact shapes:
 
 - `architecture.md`: `Summary`, `Mode`, `Projects`, `Capabilities`, `Runtime Topology`, `Data Stores`, `Integrations`, `Open Questions`, `Evidence`
 - `conventions.md`: `Summary`, `Languages And Tooling`, `Formatting`, `Naming`, `Imports And Boundaries`, `Testing`, `Logging And Errors`, `Library Patterns`, `Component Locations`, `Anti-Patterns`, `Evidence`
-- `inventory.md`: `Summary`, `Projects`, `Modules`, `Entrypoints`, `Routes`, `Data Models`, `Jobs`, `Evidence`
+- `wiki/*.md`: `Summary`, `Mental Model`, `Anchors`, `Decisions` (optional), `Open Questions` (optional), `Evidence`
 - `learned.md`: `Summary`, `Rules`, `Notes`
 
 ---
@@ -41,30 +44,34 @@ Before writing code, load context in this order:
 2. `.github/idd/architecture.md`
 3. `.github/idd/conventions.md`
 4. `.github/idd/learned.md`
-5. The relevant feature spec in `.github/idd/features/`
-6. `.github/idd/inventory.md` when you need brownfield repository evidence
+5. Relevant wiki entries under `.github/idd/wiki/`
+6. The relevant feature spec in `.github/idd/features/`
 
 Trust order:
 
 1. Explicit user instructions
 2. `learned.md`
-3. The active feature spec
+3. `architecture.md`
 4. `conventions.md`
-5. `architecture.md`
-6. `inventory.md`
+5. Relevant wiki entries
+6. The active feature spec
 7. Fresh repository evidence you read directly
+
+`architecture.md` and `conventions.md` are foundational constraints on
+implementation, not preferences. `architecture.md` describes the runtime
+and deployment reality the code has to live inside — where it runs, how
+it is built, what it integrates with, what topology and data stores it
+depends on. `conventions.md` describes the rules the organization has
+already decided code **must** follow — style, structure, anti-patterns,
+library choices. Wiki entries describe what the system **is** as a
+domain; the active feature spec describes one bounded slice of intent.
+Wiki entries and feature specs operate inside the runtime reality and
+organizational rules; they do not override them. If a feature spec or
+wiki entry implies a choice that contradicts architecture or
+conventions, fix the spec or wiki entry, do not weaken the foundation.
 
 If the files disagree, prefer the higher-trust source and record the mismatch in
 the file you update.
-
-North star:
-
-- Feature specs are the primary bridge between intent and source code.
-- Treat maintained feature specs as a durable execution layer for software intent, analogous to how IaC made infrastructure declarative and automatable.
-- Use Copilot to create or refresh the relevant feature spec before substantial implementation or maintenance work.
-- Let code execution follow the active feature spec.
-- Let later maintenance follow the active feature spec plus its glossary anchors.
-- As models improve, expect the same feature specs to yield better implementation, review, and maintenance outcomes.
 
 ---
 
@@ -73,12 +80,14 @@ North star:
 When starting in an IDD repository:
 
 1. Ensure the artifact files in §0 exist.
-2. If the repository is greenfield, ask the user follow-up questions before
-   filling `architecture.md`.
-3. If the repository is brownfield, inspect the repository before asking the
-   user to restate facts already present in code, docs, or config.
-4. If a requested feature has no spec yet, create one from
-   `.github/idd/features/_template.md` first.
+2. If the repository is greenfield, ask the user to invoke `/idd-init`
+   so the architecture, conventions, and seed wiki entries get written
+   from real answers rather than guesses.
+3. If the repository is brownfield, ask the user to invoke
+   `/idd-discover` before restating facts already present in code,
+   docs, or config.
+4. If a requested feature has no spec yet, ask the user to invoke
+   `/idd-feature` to derive one from the relevant wiki entry.
 
 Do not invent detailed context just to make the files look complete.
 
@@ -86,52 +95,22 @@ Do not invent detailed context just to make the files look complete.
 
 ## §3 Brownfield Discovery Workflow
 
-Use this workflow when the user wants the repository understood or decomposed.
-
-1. Read manifests, formatter configs, lint configs, CI workflows, deployment
-   descriptors, and representative source files.
-2. Populate `.github/idd/inventory.md` with bounded evidence:
-   projects, modules, entrypoints, routes, data models, jobs, and evidence.
-3. Populate `.github/idd/conventions.md` with patterns that are actually visible
-   in the repository.
-4. Populate `.github/idd/architecture.md` with the coarse system shape, runtime
-   topology, integrations, and open questions.
-5. If evidence is ambiguous, record that ambiguity in `Open Questions` or
-   `Evidence` instead of guessing.
-
-Do not create one inventory row per trivial helper.
-Do not execute project code, builds, tests, or deploy commands unless the user
-explicitly asks for that.
+Triggered by `/idd-discover`. Procedure and safety rules live in
+`code::.github/prompts/idd-discover.prompt.md`.
 
 ---
 
 ## §4 Greenfield Workflow
 
-Use this workflow when the user is starting from an empty or mostly empty repo.
-
-1. Ask for the system name, major surfaces, constraints, integrations, and the
-   first feature to implement.
-2. Write `.github/idd/architecture.md` from those answers.
-3. Write `.github/idd/conventions.md` only for conventions the user has chosen
-   or that the repository already establishes.
-4. Keep `.github/idd/inventory.md` minimal until real code exists.
-5. Create the first feature spec from `_template.md`.
+Triggered by `/idd-init`. Procedure and safety rules live in
+`code::.github/prompts/idd-init.prompt.md`.
 
 ---
 
 ## §5 Feature Creation Workflow
 
-When the user requests a new feature spec:
-
-1. Read `architecture.md`, `conventions.md`, `learned.md`, and the relevant
-   parts of `inventory.md`.
-2. Create one bounded feature file in `.github/idd/features/`.
-3. State what the feature does, what is in scope, and what is out of scope.
-4. Keep acceptance criteria atomic and verifiable.
-5. For brownfield features, include discovery notes or constraints when the repo
-   already implies limits or dependencies.
-
-Do not generate one feature per file or one feature per helper.
+Triggered by `/idd-feature`. Procedure and safety rules live in
+`code::.github/prompts/idd-feature.prompt.md`.
 
 ---
 
@@ -145,13 +124,39 @@ When implementing a feature:
 3. Search for existing components before creating new ones.
 4. Reuse or extend existing code when the repository already has the right
    abstraction.
-5. Mark completed acceptance criteria with `[x]`.
-6. Update the feature glossary before finishing.
-7. If the code changes intended behavior, scope, or touched surfaces in a
+5. Execute each acceptance criterion under Red / Green TDD: an acceptance
+   criterion may only be marked complete when a referenced verification
+   exists, was failing before the change (Red), and passes after (Green).
+   See `wiki::red-green-tdd::mental-model`.
+6. Mark completed acceptance criteria with `[x]` only after the referenced
+   verification passes.
+7. Update the feature glossary before finishing.
+8. If the code changes intended behavior, scope, or touched surfaces in a
    meaningful way, update the feature spec in the same task.
 
 If repository evidence conflicts with the feature spec, fix the feature spec or
 raise the mismatch to the user instead of quietly diverging.
+
+### Write-Back Protocol
+
+At the end of every task that changes source code, run the Write-Back
+Protocol so wiki entries and feature specs match what the code now says.
+See `wiki::write-back-protocol::mental-model` for the operative model.
+
+1. Identify symbols added, removed, or renamed by the task (including
+   contract sections and other Markdown anchor targets).
+2. Sweep wiki and feature-spec anchors that point at those symbols.
+3. Repair the anchor and surrounding prose in place so each claim still
+   matches reality.
+4. Record unresolvable cases as entries in the `learned.md` Notes
+   section so the next `/idd-lint` pass can surface them.
+
+Rules:
+
+- **Code wins.** Reconciliation is one-directional: prose follows source,
+  never the other way around.
+- **Never fail the task.** Write-back is best-effort; if an anchor cannot
+  be cleanly repaired, drop a `learned.md` Note rather than blocking.
 
 ---
 
@@ -159,7 +164,7 @@ raise the mismatch to the user instead of quietly diverging.
 
 `learned.md` stores explicit user-approved rules.
 
-When you discover a repeated rule that is not yet captured:
+When you discover a repeated rule or note user frustration that is not yet captured:
 
 1. Propose the rule to the user with evidence.
 2. Only add it to `learned.md` after the user approves, unless the user directly
@@ -170,16 +175,32 @@ When you discover a repeated rule that is not yet captured:
 
 ## §8 Glossary Workflow
 
-Every feature file must end with a `## Glossary` table.
+Every feature file must end with a `## Glossary` table whose `Location`
+column uses the anchor grammar below. The same grammar is used everywhere
+artifacts cross-reference each other (`wiki::anchor-grammar::mental-model`).
+
+Anchor forms (three only):
+
+1. `code::<path>::<symbol>` — a stable symbol in source. For methods,
+   use `code::<path>::<Class>.<method>`. For Markdown sections, use
+   `code::<path>::§N` or `code::<path>::§<heading>`.
+2. `feature::<feature-id>::ac-N` — a numbered acceptance criterion in a
+   feature spec.
+3. `wiki::<topic>::<section>` — a section anchor inside a wiki entry.
 
 Rules:
 
-1. Use `file::symbol` anchors when a stable symbol exists.
-2. Use `file::Class.method` for methods.
-3. Use `file::#feature:marker` only when a stable symbol is not available.
-4. Include public entrypoints, major classes, endpoints, and other stable anchors
-   the next agent will need.
-5. If a symbol moves or is renamed, update the glossary.
+- Anchors are outbound only. Source code emits no anchors; it is the
+  fixed point that wiki entries and feature specs point at.
+- Do not maintain persistent `Backlinks` tables. Inbound edges are a
+  derived view; materialize them on demand via `/idd-lint`, never as a
+  long-lived artifact.
+- Line-range anchors are disallowed by default. If a stable symbol or
+  heading is unavailable, leave a `TODO: anchor` note and prefer adding
+  a stable anchor to the target file over encoding line numbers.
+- Include public entrypoints, major classes, endpoints, and other stable
+  anchors the next agent will need.
+- If a symbol moves or is renamed, update the anchor in the glossary.
 
 Glossary anchors are how later maintenance work reconnects source code to the
 feature spec that justified it.
@@ -191,6 +212,10 @@ Validate anchors against real files before finishing.
 ## §9 Consistency Review Workflow
 
 Before declaring IDD work complete:
+
+0. Confirm the §6 Write-Back Protocol ran for any task that changed
+   source code. Consistency Review is not a substitute for write-back;
+   it is a final sweep after it.
 
 There is no authoritative deterministic validator behind this system. Review
 means an evidence-backed pass over the repository and the IDD artifacts where
@@ -219,5 +244,7 @@ If a file is stale, fix it in the same task rather than leaving drift behind.
 - Ask follow-up questions when intent is missing and cannot be recovered from the repo.
 - Do not execute untrusted project code by default.
 - Do not handle raw secrets or credentials.
-- Do not update legacy JSON artifacts just because they are still present.
 - Express confidence and uncertainty explicitly when the repository evidence is incomplete.
+- Do not run IDD slash commands (`/idd-discover`, `/idd-init`,
+  `/idd-feature`, `/idd-lint`) automatically. They are user-initiated
+  only; their procedures live under `.github/prompts/`.
