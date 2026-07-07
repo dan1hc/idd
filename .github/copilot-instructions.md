@@ -18,6 +18,8 @@ These are the authoritative IDD files:
 - `.github/idd/wiki/*.md`
 - `.github/idd/features/_template.md`
 - `.github/idd/features/*.md`
+- `.github/idd/checks/_template.yml`
+- `.github/idd/checks/*.yml`
 - `.github/prompts/idd-discover.prompt.md`
 - `.github/prompts/idd-init.prompt.md`
 - `.github/prompts/idd-feature.prompt.md`
@@ -72,6 +74,12 @@ conventions, fix the spec or wiki entry, do not weaken the foundation.
 
 If the files disagree, prefer the higher-trust source and record the mismatch in
 the file you update.
+
+Scoped instruction files (`.github/instructions/`, fenced sections in
+nested `CLAUDE.md` files, `.cursor/rules/`) are compiled views of
+`learned.md`, not sources. When a compiled view and `learned.md`
+disagree, `learned.md` is the editable source of truth; recompile the
+view rather than editing it.
 
 ---
 
@@ -137,6 +145,19 @@ When implementing a feature:
 If repository evidence conflicts with the feature spec, fix the feature spec or
 raise the mismatch to the user instead of quietly diverging.
 
+### In-Session Mechanical Checks
+
+Where the harness supports hooks (for example Claude Code), the
+committed checks in `.github/idd/checks/` run automatically on edit,
+and again as a blocking commit gate when the session runs `git commit`.
+When a mechanical check fails in-session, make a self-correction
+attempt — fix the violation, guided by the rule's constraint and
+rationale in the check's message — before the diff is proposed
+externally. In harnesses without hook support, run the same checks
+yourself (`ast-grep scan --config sgconfig.yml` over the files you
+changed) before proposing a diff; there is no external backstop, by
+decision.
+
 ### Write-Back Protocol
 
 At the end of every task that changes source code, run the Write-Back
@@ -164,12 +185,89 @@ Rules:
 
 `learned.md` stores explicit user-approved rules.
 
-When you discover a repeated rule or note user frustration that is not yet captured:
+Rule schema (the `Rules` table columns):
 
-1. Propose the rule to the user with evidence.
-2. Only add it to `learned.md` after the user approves, unless the user directly
-   asked you to save the rule.
-3. Record rules in the table format already present in `learned.md`.
+- `Rule Type` — short category label (imports, errors, naming, …).
+- `Scope` — one or more comma-separated glob patterns matching the
+  files the rule governs (`src/api/**`); `*` means repo-wide. Globs
+  only — no other scope vocabulary.
+- `Constraint` — the rule itself, stated imperatively.
+- `Rationale` — why the team chose this; cited whenever the rule is
+  enforced or re-explained.
+- `Enforcement` — `mechanical` (expressible as a deterministic check
+  with an acceptable false-positive rate) or `judgment` (requires
+  semantic understanding of the change; reviewable by an LLM pass,
+  never reducible to a deterministic check).
+- `Check-Id` — the deterministic check backing a `mechanical` rule.
+  Empty until such a check exists, and always empty for `judgment`
+  rules.
+- `Status` — lifecycle state, moving only forward:
+  `proposed → active → enforced → deprecated`.
+  - `proposed` — recorded with evidence, awaiting user approval.
+  - `active` — user-approved; agents must follow it.
+  - `enforced` — a `mechanical` rule whose deterministic check is
+    live. Retained for rationale and audit; it no longer depends on
+    generation-time prose salience.
+  - `deprecated` — no longer applies; kept for history.
+
+When you discover a repeated rule or note user frustration that is not
+yet captured:
+
+1. Propose the rule to the user with evidence, recorded as
+   `Status: proposed`.
+2. Only mark it `active` after the user approves, unless the user
+   directly asked you to save the rule.
+3. Record rules in the table format defined above.
+
+If a repository still carries the older five-column table
+(`Rule Type | Scope | Constraint | Rationale | Status`), migrate the
+header in place on first touch and backfill existing rows with
+`Enforcement: judgment` and an empty `Check-Id`. Never drop rule
+content during migration.
+
+### Compiling a `mechanical` rule
+
+Compilation happens in the same session and same diff as approval —
+there is no separate step to remember:
+
+1. Prefer the repository's existing linter. If a stock linter rule
+   (ruff, eslint, …) expresses the constraint, widen the linter config
+   instead of writing a new check, and record
+   `Check-Id: linter:<rule-code>`.
+2. Otherwise write an ast-grep rule at
+   `.github/idd/checks/<check-id>.yml`, where the check-id is
+   `idd-<rule-slug>`. Follow the shape in
+   `.github/idd/checks/_template.yml`. The rule's `message` must cite
+   the Constraint and Rationale so a failing check teaches, not just
+   blocks.
+3. Never duplicate a stock linter rule as an ast-grep check. Partial
+   duplicate coverage produces false confidence, not compliance.
+4. Checks are committed deterministic code. Nothing invokes an LLM at
+   commit time; the session's hooks run only what is already reviewed
+   and committed.
+
+### Compiling `judgment` rules
+
+Also in the same session and diff as approval:
+
+1. Group `active` judgment rules by distinct `Scope` glob and compile
+   one file per scope into each native per-path injection surface the
+   repository's tools read:
+   - `.github/instructions/idd.<scope-slug>.instructions.md` with
+     `applyTo: "<glob>"` frontmatter (Copilot)
+   - a fenced `<!-- idd:begin -->` section in the `CLAUDE.md` nearest
+     the scope's directory root (Claude Code)
+   - `.cursor/rules/idd-<scope-slug>.mdc` with glob frontmatter
+     (Cursor)
+2. Every compiled file begins with the marker
+   `<!-- idd:compiled from .github/idd/learned.md — do not edit -->`
+   followed by the source rule ids it was generated from. Humans and
+   agents edit `learned.md`, never compiled output.
+3. Rules with status `enforced` or `deprecated` are omitted from
+   compiled instruction files: enforcement has replaced prose salience
+   for them, which is what keeps the injected rule set small.
+4. If a harness's native surface stops existing, drop it from
+   compilation; do not emulate it.
 
 ---
 
@@ -233,6 +331,13 @@ you look for contradictions, omissions, stale anchors, and low-confidence claims
    is exhaustive.
 7. Work directly with repository files and artifact templates. Do not assume a
    hidden backstop exists.
+8. Run the in-session judgment review: re-read the diff you are about
+   to propose against the `judgment` rules in `learned.md` whose
+   `Scope` globs match the files you changed — those rules and the
+   diff, nothing else. Fix violations in this session before proposing
+   the diff; if the user explicitly overrides a rule, record that in
+   the diff description. This pass is mandatory for every
+   code-changing task, not an on-demand command.
 
 If a file is stale, fix it in the same task rather than leaving drift behind.
 

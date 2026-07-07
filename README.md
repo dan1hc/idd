@@ -93,6 +93,33 @@ durable part of the design: the better the model gets, the more value it can
 extract from the same artifact set, and the faster teams can iterate on
 applications without rebuilding context from scratch.
 
+## Enforcement
+
+Learned rules are compiled, not merely read. `learned.md` stays the
+single authored source of truth; approving a rule compiles it into the
+native enforcement surfaces of each tool in the same session:
+
+Everything runs in-session — IDD wires no CI and no external hook
+manager:
+
+- **Mechanical rules** widen the repo's existing linter config, or
+  become committed ast-grep checks under `.github/idd/checks/` that
+  session hooks run on every edit and again as a blocking gate when
+  the session commits — deterministic code only, no LLM in the commit
+  path.
+- **Judgment rules** compile into path-scoped instruction files
+  (Copilot `applyTo` instructions, nested `CLAUDE.md` sections,
+  `.cursor/rules`) so they're injected at edit time, and a mandatory
+  in-session review re-checks the diff against exactly the rules whose
+  scope matches before it is proposed for human review — riding the
+  session's own model access, no extra credential.
+- **Enforced rules drop out of prose entirely**, which keeps the rule
+  set the model actually reads small enough to stay salient.
+
+This layer is capability-invariant by design: better models improve
+judgment quality, but a team-specific choice among equally valid options
+can never be inferred — only retrieved, reliably, every time.
+
 ## Why It Scales
 
 1. The operating rules live in the repo, not in a shell wrapper.
@@ -129,12 +156,14 @@ software engineer's day-to-day artifact is.
 curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash
 ```
 
-The installer:
+The installer is additive — it never clobbers a file IDD does not
+solely own:
 
-- creates `.github/idd/`
-- downloads `.github/copilot-instructions.md` and the feature template
-- scaffolds the top-level IDD artifacts if they do not exist yet
-- mirrors the same operating contract to `.cursorrules` and `CLAUDE.md` when possible
+- creates `.github/idd/` and scaffolds the top-level IDD artifacts if they do not exist yet
+- downloads `.github/copilot-instructions.md`, the feature/wiki/check templates, and the slash-command prompts
+- wires `sgconfig.yml` so ast-grep finds the committed checks (created if missing, extended if present)
+- injects the operating contract into `.cursorrules` and `CLAUDE.md` behind `idd:begin`/`idd:end` markers, preserving existing content
+- creates `.claude/settings.json` hooks — edit-time checks plus the in-session commit gate — when the file does not already exist
 
 | Tool | Reads from |
 |------|-----------|
@@ -152,7 +181,9 @@ IDD uses Markdown-first context files the team owns and edits.
 | `.github/idd/architecture.md` | System shape, runtime topology, integrations, and open questions |
 | `.github/idd/conventions.md` | Code style, boundaries, library patterns, and component placement |
 | `.github/idd/wiki/*.md` | Durable concept map: bounded entries that feature specs and the contract anchor at |
-| `.github/idd/learned.md` | Explicit user-approved rules that override discovered conventions |
+| `.github/idd/learned.md` | Explicit user-approved rules that override discovered conventions — the authored source the enforcement layer compiles |
+| `.github/idd/checks/*.yml` | Compiled ast-grep checks for `mechanical` learned rules, run by the gates and in-session hooks |
+| `.github/idd/templates/*` | Session-hook templates the installer wires additively (edit-time checks, in-session commit gate) |
 | `.github/idd/features/*.md` | The primary planning and execution layer: bounded feature specs with acceptance criteria and glossary anchors |
 | `.github/prompts/idd-discover.prompt.md` | On-demand `/idd-discover` command for brownfield discovery |
 | `.github/prompts/idd-init.prompt.md` | On-demand `/idd-init` command for greenfield bootstrap |
@@ -185,19 +216,27 @@ of source code, and keep doing so as the model frontier moves.
 ```text
 .github/
 ├── copilot-instructions.md
-├── prompts/│   ├── idd-discover.prompt.md
-│   ├── idd-init.prompt.md
-│   ├── idd-feature.prompt.md│   └── idd-lint.prompt.md
+├── prompts/
+│   ├── idd-discover.prompt.md
+│   ├── idd-init.prompt.md
+│   ├── idd-feature.prompt.md
+│   └── idd-lint.prompt.md
 └── idd/
     ├── architecture.md
     ├── conventions.md
     ├── learned.md
+    ├── checks/
+    │   ├── _template.yml
+    │   └── *.yml
+    ├── templates/
     ├── wiki/
     │   ├── _template.md
     │   └── *.md
     └── features/
         ├── _template.md
         └── *.md
+sgconfig.yml
+.claude/settings.json
 ```
 
 ## License

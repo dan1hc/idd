@@ -17,6 +17,28 @@ download() {
 	curl -fsSL "$BASE_URL/$remote_path" > "$local_path"
 }
 
+# Additive injection: IDD never solely owns a shared file. Content is
+# fenced between idd:begin / idd:end markers; everything outside the
+# fence is preserved byte-for-byte, and re-running replaces only the
+# fenced block.
+inject_idd_block() {
+	local dest="$1"
+	local body="$2"
+	local begin="<!-- idd:begin -->"
+	local end="<!-- idd:end -->"
+	local content pre post
+	if [[ -f "$dest" ]] && grep -qF "$begin" "$dest"; then
+		content="$(cat "$dest")"
+		pre="${content%%"$begin"*}"
+		post="${content##*"$end"}"
+		printf '%s%s\n%s\n%s%s\n' "$pre" "$begin" "$body" "$end" "$post" > "$dest"
+	elif [[ -f "$dest" ]]; then
+		printf '\n%s\n%s\n%s\n' "$begin" "$body" "$end" >> "$dest"
+	else
+		printf '%s\n%s\n%s\n' "$begin" "$body" "$end" > "$dest"
+	fi
+}
+
 write_if_missing() {
 	local dest="$1"
 	local template_name="$2"
@@ -158,9 +180,9 @@ EOF
 
 ## Rules
 
-| Rule Type | Scope | Constraint | Rationale | Status |
-|-----------|-------|------------|-----------|--------|
-|           |       |            |           | active |
+| Rule Type | Scope | Constraint | Rationale | Enforcement | Check-Id | Status |
+|-----------|-------|------------|-----------|-------------|----------|--------|
+|           |       |            |           |             |          | active |
 
 ## Notes
 
@@ -180,7 +202,7 @@ echo ""
 echo -e "${BOLD}Installing IDD${NC}"
 echo ""
 
-mkdir -p .github/idd/features .github/idd/wiki .github/prompts
+mkdir -p .github/idd/features .github/idd/wiki .github/idd/checks .github/prompts
 
 echo -e "  ${BLUE}→${NC} Downloading instructions..."
 download ".github/copilot-instructions.md" ".github/copilot-instructions.md"
@@ -190,6 +212,25 @@ download ".github/idd/features/_template.md" ".github/idd/features/_template.md"
 
 echo -e "  ${BLUE}→${NC} Downloading wiki template..."
 download ".github/idd/wiki/_template.md" ".github/idd/wiki/_template.md"
+
+echo -e "  ${BLUE}→${NC} Downloading check template..."
+download ".github/idd/checks/_template.yml" ".github/idd/checks/_template.yml"
+
+# Wire ast-grep at the committed checks directory. Additive: create a
+# minimal sgconfig.yml when absent, extend ruleDirs when present.
+if [[ ! -f "sgconfig.yml" ]]; then
+	printf 'ruleDirs:\n  - .github/idd/checks\n' > "sgconfig.yml"
+	echo -e "  ${BLUE}→${NC} Created sgconfig.yml"
+elif ! grep -qF ".github/idd/checks" "sgconfig.yml"; then
+	if grep -qE '^ruleDirs:' "sgconfig.yml"; then
+		awk '{print} /^ruleDirs:/ {print "  - .github/idd/checks"}' "sgconfig.yml" > "sgconfig.yml.idd" && mv "sgconfig.yml.idd" "sgconfig.yml"
+	else
+		printf '\nruleDirs:\n  - .github/idd/checks\n' >> "sgconfig.yml"
+	fi
+	echo -e "  ${BLUE}→${NC} Extended sgconfig.yml ruleDirs"
+else
+	echo -e "  ${BLUE}→${NC} Preserving sgconfig.yml"
+fi
 
 echo -e "  ${BLUE}→${NC} Downloading slash-command prompts..."
 download ".github/prompts/idd-discover.prompt.md" ".github/prompts/idd-discover.prompt.md"
@@ -202,9 +243,28 @@ write_if_missing ".github/idd/architecture.md" "architecture"
 write_if_missing ".github/idd/conventions.md" "conventions"
 write_if_missing ".github/idd/learned.md" "learned"
 
-echo -e "  ${BLUE}→${NC} Copying instructions to AI tool locations..."
-cp ".github/copilot-instructions.md" ".cursorrules" 2>/dev/null || true
-cp ".github/copilot-instructions.md" "CLAUDE.md" 2>/dev/null || true
+# In-session correction: Claude Code hooks running the committed checks
+# on edit. settings.json is JSON, so marker fencing does not apply —
+# create when absent, otherwise print merge guidance rather than
+# overwrite (additive-installation invariant).
+if [[ ! -f ".claude/settings.json" ]]; then
+	mkdir -p .claude
+	download ".github/idd/templates/claude-settings-hooks.json" ".claude/settings.json"
+	echo -e "  ${BLUE}→${NC} Created .claude/settings.json (IDD hooks)"
+else
+	echo -e "  ${BLUE}→${NC} .claude/settings.json exists; merge the hooks from .github/idd/templates/claude-settings-hooks.json manually."
+fi
+
+echo -e "  ${BLUE}→${NC} Injecting contract into AI tool locations..."
+contract_body="$(cat ".github/copilot-instructions.md")"
+for tool_file in ".cursorrules" "CLAUDE.md"; do
+	# A pre-marker IDD install left a full copy of the contract; swap
+	# it for a fenced block. Any other existing content is kept.
+	if [[ -f "$tool_file" ]] && cmp -s "$tool_file" ".github/copilot-instructions.md"; then
+		rm "$tool_file"
+	fi
+	inject_idd_block "$tool_file" "$contract_body"
+done
 
 echo ""
 echo -e "${GREEN}✓${NC} IDD installed successfully!"

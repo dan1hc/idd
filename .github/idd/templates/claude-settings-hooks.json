@@ -1,0 +1,27 @@
+{
+  "$comment": "IDD in-session enforcement — Claude Code hooks. Everything runs in-session: the PostToolUse hook runs the committed ast-grep checks against each edited file, and the PreToolUse hook is the commit gate — the same checks run over the tree and block `git commit` on failure. Failures feed back as exit-code-2 stderr with the check's message (constraint + rationale). Deterministic and local: no LLM, no network, no CI, no git hooks. Silent no-op when jq or ast-grep is missing or no checks are committed, so adopting IDD never breaks a repo.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); [ -n \"$f\" ] || exit 0; command -v ast-grep >/dev/null 2>&1 || exit 0; ls .github/idd/checks/*.yml >/dev/null 2>&1 || exit 0; out=$(ast-grep scan --config sgconfig.yml \"$f\" 2>&1) || { printf 'IDD mechanical check failed — fix before proposing this diff:\\n%s\\n' \"$out\" >&2; exit 2; }"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty' 2>/dev/null); case \"$cmd\" in *'git commit'*) ;; *) exit 0;; esac; command -v ast-grep >/dev/null 2>&1 || exit 0; ls .github/idd/checks/*.yml >/dev/null 2>&1 || exit 0; out=$(ast-grep scan --config sgconfig.yml 2>&1) || { printf 'IDD commit gate: mechanical checks failed — fix before committing:\\n%s\\n' \"$out\" >&2; exit 2; }"
+          }
+        ]
+      }
+    ]
+  }
+}

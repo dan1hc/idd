@@ -1,0 +1,20 @@
+# Compiled mechanical check — shape template.
+#
+# One learned rule -> one file at .github/idd/checks/<check-id>.yml,
+# where check-id = idd-<rule-slug> and matches the rule's Check-Id
+# column in .github/idd/learned.md. Written at rule-approval time,
+# reviewed and committed like any code. Session hooks run these via
+# `ast-grep scan` — on every edit, and as the blocking in-session
+# commit gate.
+#
+# The message must cite the Constraint and Rationale so a failing
+# check teaches, not just blocks.
+id: idd-example-rule-slug
+language: python
+severity: error
+rule:
+  pattern: getattr($OBJ, $ATTR, $DEFAULT)
+message: >-
+  Do not use getattr with a default; access the attribute directly.
+  Rationale: silent fallbacks hide schema drift (learned rule
+  example-rule-slug in .github/idd/learned.md).

@@ -39,6 +39,23 @@ For each, produce findings, not file mutations:
 6. **`learned.md` Notes drain.** Walk Notes left by write-back. For each,
    either resolve in place or convert it into an Open Question on the
    relevant wiki entry.
+7. **Enforcement sync.** Compare the `learned.md` Rules table against
+   its compiled artifacts, in both directions:
+   - Every `mechanical` rule with a check-id maps to a live check —
+     either a `.github/idd/checks/<check-id>.yml` file or, for
+     `linter:<rule-code>` entries, the code selected in the repo's
+     linter config. Flag rules whose check is missing and checks whose
+     rule is gone.
+   - Every compiled instruction file (marked `idd:compiled`) still
+     matches the `active` `judgment` rules and `Scope` globs it was
+     generated from. Flag drift and propose recompilation as a repair.
+   These are deterministic comparisons — file reads and glob matching,
+   no model judgment needed to detect drift, only to propose repairs.
+8. **Lifecycle proposals.** Propose promotions of `mechanical` rules to
+   `enforced` where the check is committed and the gates are wired
+   (promotion drops the rule from compiled prose — the pruning
+   mechanism), and flag rules the code no longer exercises as
+   `deprecated` candidates.
 
 ## Output
 
@@ -50,6 +67,8 @@ Write a single structured report into the chat with these sections:
 - Orphans
 - Stale claims
 - `learned.md` Notes status
+- Enforcement sync (rule ↔ check-id ↔ compiled artifact, both
+  directions, plus promotion and deprecation proposals)
 
 ## Safety
 

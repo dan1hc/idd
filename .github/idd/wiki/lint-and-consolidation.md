@@ -28,6 +28,12 @@ Responsibilities:
 - **`learned.md` drain.** Walk notes left by write-back and either
   resolve them now or convert them into open questions on the relevant
   wiki entry.
+- **Enforcement sync.** Verify rule ↔ check-id ↔ compiled artifact in
+  both directions (see `wiki::rule-enforcement::rule-lifecycle`), and
+  propose lifecycle moves: promotion of gated `mechanical` rules to
+  `enforced` (the pruning mechanism) and `deprecated` candidates. Lint
+  is the *verifier and repairer* of compilation — never the primary
+  compiler, which runs at rule-approval time.
 
 Behavior:
 

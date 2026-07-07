@@ -7,8 +7,8 @@ conventions.
 
 ## Rules
 
-| Rule Type | Scope | Constraint | Rationale | Status |
-|-----------|-------|------------|-----------|--------|
+| Rule Type | Scope | Constraint | Rationale | Enforcement | Check-Id | Status |
+|-----------|-------|------------|-----------|-------------|----------|--------|
 
 ## Notes
 
