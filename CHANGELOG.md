@@ -1,3 +1,21 @@
+# [2.0.0](https://github.com/dan1hc/idd/compare/v1.7.0...v2.0.0) (2026-07-07)
+
+
+* feat!: compile learned rules into in-session enforcement ([90fe394](https://github.com/dan1hc/idd/commit/90fe394a30fe524af200e53a2801c96f03e167c6))
+
+
+### BREAKING CHANGES
+
+* the learned.md Rules table is now seven columns
+(Rule Type | Scope | Constraint | Rationale | Enforcement | Check-Id |
+Status); existing five-column tables are migrated in place on first
+touch per contract §7. The installer no longer overwrites CLAUDE.md or
+.cursorrules with a full copy of the contract — content is injected
+between idd:begin/idd:end markers and pre-existing content is
+preserved.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
 # [1.7.0](https://github.com/dan1hc/idd/compare/v1.6.0...v1.7.0) (2026-04-12)
 
 
