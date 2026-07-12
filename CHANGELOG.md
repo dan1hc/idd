@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/dan1hc/idd/compare/v2.0.0...v2.1.0) (2026-07-12)
+
+
+### Features
+
+* compile enforcement hooks per-harness for github copilot ([e918a09](https://github.com/dan1hc/idd/commit/e918a0902410783f70b3152bd67f1860f84d937b))
+
 # [2.0.0](https://github.com/dan1hc/idd/compare/v1.7.0...v2.0.0) (2026-07-07)
 
 
