@@ -202,8 +202,12 @@
       <h2>Enforcement setup</h2>
       <p class="lede" style="margin-bottom:16px; font-size:0.98rem;">
         Enforcement runs entirely in-session, so there are no repo
-        secrets and no branch-protection settings. The hooks need two
-        local tools; without them they degrade to silent no-ops:
+        secrets and no branch-protection settings. The installer wires
+        the hooks for both harnesses — Claude Code via
+        <code>.claude/settings.json</code>, GitHub Copilot (CLI, cloud
+        coding agent, VS Code agent mode) via
+        <code>.github/hooks/idd.json</code>. The hooks need two local
+        tools; without them they degrade to silent no-ops:
       </p>
       <ol class="steps">
         <li><div><strong>Install ast-grep</strong><p><code>brew install ast-grep</code> (or <code>npm i -g @ast-grep/cli</code>). Runs the committed mechanical checks on every edit and as the blocking in-session commit gate.</p></div></li>
@@ -215,6 +219,8 @@
       <h2>Footprint</h2>
 <div class="tree"><span class="key">.github/</span>
 ├── copilot-instructions.md
+├── hooks/
+│   └── idd.json
 ├── prompts/
 │   ├── idd-discover.prompt.md
 │   ├── idd-init.prompt.md

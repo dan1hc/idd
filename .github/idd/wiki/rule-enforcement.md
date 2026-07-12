@@ -67,9 +67,13 @@ priority order:
    check-id, reviewed and committed alongside the rule itself. Session
    hooks run only committed deterministic code — on every edit, and as
    a blocking commit gate when the session runs `git commit` — no LLM
-   call in the commit hot path; they fail hard on a match. Sync is
-   asserted deterministically: every `mechanical` rule maps to a live
-   check-id and vice versa; `/idd-lint` surfaces drift.
+   call in the commit hot path; they fail hard on a match. The hook
+   wiring compiles per-harness: the same two commands, each harness's
+   native envelope — Claude Code via `.claude/settings.json`, GitHub
+   Copilot (CLI, cloud coding agent, VS Code agent mode) via
+   `.github/hooks/idd.json`. Sync is asserted deterministically: every
+   `mechanical` rule maps to a live check-id and vice versa;
+   `/idd-lint` surfaces drift.
 3. **Path-scoped instruction files.** `judgment` rules compile into
    each harness's native per-path injection surface — Copilot
    `.github/instructions/*.instructions.md` (`applyTo` globs), nested
@@ -132,6 +136,10 @@ priority order:
   entrypoint: the approval-time compile procedures for `mechanical`
   and `judgment` rules
 - `code::.github/idd/checks/_template.yml` — the compiled-check shape
+- `code::.github/idd/templates/claude-settings-hooks.json` — the
+  Claude Code hook envelope (exit-code signaling)
+- `code::.github/idd/templates/copilot-hooks.json` — the GitHub
+  Copilot hook envelope (stdout-JSON signaling)
 - `code::.github/copilot-instructions.md::§9` — the in-session
   judgment review (compilation target 4)
 - `code::.github/idd/features/10-learned-rules-schema.md::What` —
@@ -197,6 +205,24 @@ priority order:
   run by a harness hook when the session executes `git commit`. The
   commit gate fails hard; the judgment pass fixes violations in the
   session rather than blocking externally.
+- **2026-07 — Enforcement hooks compile per-harness; GitHub Copilot's
+  native hooks are wired alongside Claude Code's.** Copilot ships a
+  first-class hooks system (`preToolUse`, `postToolUse`) read from
+  `.github/hooks/*.json` by the Copilot CLI, the cloud coding agent,
+  and VS Code agent mode — the same two enforcement points IDD
+  compiles for Claude Code, so both harnesses get identical in-session
+  enforcement. The envelope differs and the difference is
+  load-bearing: Copilot's payload is camelCase (`toolName`/`toolArgs`;
+  VS Code's compatibility layer sends `tool_name`/`tool_input` with
+  camelCase inner keys), and exit code 2 means *warn-and-continue* in
+  Copilot — the exact code that *blocks* in Claude Code. The compiled
+  Copilot hooks therefore never signal through exit codes: they emit
+  stdout JSON (`permissionDecision: deny` for the commit gate,
+  `additionalContext` for edit-check feedback) and exit 0, and they
+  probe both payload spellings so one file serves every Copilot
+  surface. `.github/hooks/` is a multi-file namespace, so IDD owns
+  `.github/hooks/idd.json` outright — a plain installer write, no
+  marker fencing, no merge guidance.
 
 ## Evidence
 
@@ -218,3 +244,10 @@ priority order:
   scoped instruction compilation (13), mechanical gates (14), CI
   judgment gate (15), lint sync and promotion (16), in-session
   correction (17), docs and user guide (18).
+- `.github/idd/features/19-everything-in-session.md` — the in-session
+  supersession of the CI and pre-commit-framework surfaces.
+- `.github/idd/features/20-copilot-hooks.md` — per-harness hook
+  compilation: the GitHub Copilot envelope.
+- GitHub Copilot hooks reference (docs.github.com, 2026) — event set,
+  payload shapes, decision-control JSON, and the exit-code semantics
+  the Copilot envelope is designed around.

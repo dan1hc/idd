@@ -255,6 +255,14 @@ else
 	echo -e "  ${BLUE}→${NC} .claude/settings.json exists; merge the hooks from .github/idd/templates/claude-settings-hooks.json manually."
 fi
 
+# GitHub Copilot hooks: the same enforcement in Copilot's envelope,
+# read by the Copilot CLI, cloud coding agent, and VS Code agent mode.
+# .github/hooks/ is a multi-file namespace, so IDD owns idd.json
+# outright — a plain write, no fencing, no merge guidance.
+mkdir -p .github/hooks
+download ".github/idd/templates/copilot-hooks.json" ".github/hooks/idd.json"
+echo -e "  ${BLUE}→${NC} Installed .github/hooks/idd.json (IDD hooks for Copilot)"
+
 echo -e "  ${BLUE}→${NC} Injecting contract into AI tool locations..."
 contract_body="$(cat ".github/copilot-instructions.md")"
 for tool_file in ".cursorrules" "CLAUDE.md"; do

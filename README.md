@@ -106,7 +106,9 @@ manager:
   become committed ast-grep checks under `.github/idd/checks/` that
   session hooks run on every edit and again as a blocking gate when
   the session commits — deterministic code only, no LLM in the commit
-  path.
+  path. The hooks are wired per-harness: Claude Code and GitHub
+  Copilot (CLI, cloud coding agent, VS Code agent mode) run the same
+  checks from one checked-in file each.
 - **Judgment rules** compile into path-scoped instruction files
   (Copilot `applyTo` instructions, nested `CLAUDE.md` sections,
   `.cursor/rules`) so they're injected at edit time, and a mandatory
@@ -164,6 +166,7 @@ solely own:
 - wires `sgconfig.yml` so ast-grep finds the committed checks (created if missing, extended if present)
 - injects the operating contract into `.cursorrules` and `CLAUDE.md` behind `idd:begin`/`idd:end` markers, preserving existing content
 - creates `.claude/settings.json` hooks — edit-time checks plus the in-session commit gate — when the file does not already exist
+- installs `.github/hooks/idd.json` — the same hooks in GitHub Copilot's envelope, read by the Copilot CLI, cloud coding agent, and VS Code agent mode
 
 | Tool | Reads from |
 |------|-----------|
@@ -183,7 +186,8 @@ IDD uses Markdown-first context files the team owns and edits.
 | `.github/idd/wiki/*.md` | Durable concept map: bounded entries that feature specs and the contract anchor at |
 | `.github/idd/learned.md` | Explicit user-approved rules that override discovered conventions — the authored source the enforcement layer compiles |
 | `.github/idd/checks/*.yml` | Compiled ast-grep checks for `mechanical` learned rules, run by the gates and in-session hooks |
-| `.github/idd/templates/*` | Session-hook templates the installer wires additively (edit-time checks, in-session commit gate) |
+| `.github/idd/templates/*` | Session-hook templates the installer wires additively (edit-time checks, in-session commit gate) — one envelope per harness: Claude Code and GitHub Copilot |
+| `.github/hooks/idd.json` | The compiled Copilot hooks — same checks, Copilot's stdout-JSON envelope |
 | `.github/idd/features/*.md` | The primary planning and execution layer: bounded feature specs with acceptance criteria and glossary anchors |
 | `.github/prompts/idd-discover.prompt.md` | On-demand `/idd-discover` command for brownfield discovery |
 | `.github/prompts/idd-init.prompt.md` | On-demand `/idd-init` command for greenfield bootstrap |
@@ -216,6 +220,8 @@ of source code, and keep doing so as the model frontier moves.
 ```text
 .github/
 ├── copilot-instructions.md
+├── hooks/
+│   └── idd.json
 ├── prompts/
 │   ├── idd-discover.prompt.md
 │   ├── idd-init.prompt.md

@@ -1,0 +1,20 @@
+{
+  "$comment": "IDD in-session enforcement — GitHub Copilot hooks (CLI, cloud coding agent, VS Code agent mode; installed as .github/hooks/idd.json). Same two enforcement points as the Claude Code template: postToolUse runs the committed ast-grep checks against each edited file, and preToolUse is the commit gate — the same checks over the tree, denying `git commit` on failure. Copilot's exit-code semantics invert Claude Code's (exit 2 warns and continues), so these hooks never signal by exit code: the gate denies via stdout `permissionDecision` JSON, the edit check feeds back via `additionalContext`, and both always exit 0. Scripts probe both payload spellings (toolName/toolArgs and tool_name/tool_input) and filter tools in-script because VS Code ignores matcher config. Deterministic and local: no LLM, no network, no CI, no git hooks. Silent no-op when jq or ast-grep is missing or no checks are committed, so adopting IDD never breaks a repo.",
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "p=$(cat); command -v jq >/dev/null 2>&1 || exit 0; command -v ast-grep >/dev/null 2>&1 || exit 0; ls .github/idd/checks/*.yml >/dev/null 2>&1 || exit 0; t=$(printf '%s' \"$p\" | jq -r '.toolName // .tool_name // empty' 2>/dev/null); case \"$t\" in edit|create|str_replace_editor|apply_patch|Edit|Write) ;; *) exit 0;; esac; f=$(printf '%s' \"$p\" | jq -r '.toolArgs.path // .toolArgs.filePath // .toolArgs.file_path // .tool_input.path // .tool_input.filePath // .tool_input.file_path // empty' 2>/dev/null); [ -n \"$f\" ] && [ -f \"$f\" ] || exit 0; out=$(ast-grep scan --config sgconfig.yml \"$f\" 2>&1) || { ctx=$(printf 'IDD mechanical check failed — fix before proposing this diff:\\n%s\\n' \"$out\" | jq -Rs .); printf '{\"additionalContext\":%s}\\n' \"$ctx\"; }; exit 0",
+        "timeoutSec": 60
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "p=$(cat); command -v jq >/dev/null 2>&1 || exit 0; command -v ast-grep >/dev/null 2>&1 || exit 0; ls .github/idd/checks/*.yml >/dev/null 2>&1 || exit 0; t=$(printf '%s' \"$p\" | jq -r '.toolName // .tool_name // empty' 2>/dev/null); case \"$t\" in bash|powershell|Bash) ;; *) exit 0;; esac; cmd=$(printf '%s' \"$p\" | jq -r '.toolArgs.command // .tool_input.command // empty' 2>/dev/null); case \"$cmd\" in *'git commit'*) ;; *) exit 0;; esac; out=$(ast-grep scan --config sgconfig.yml 2>&1) || { r=$(printf 'IDD commit gate: mechanical checks failed — fix before committing:\\n%s\\n' \"$out\" | jq -Rs .); printf '{\"permissionDecision\":\"deny\",\"permissionDecisionReason\":%s}\\n' \"$r\"; }; exit 0",
+        "timeoutSec": 120
+      }
+    ]
+  }
+}

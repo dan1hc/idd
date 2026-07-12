@@ -147,9 +147,11 @@ raise the mismatch to the user instead of quietly diverging.
 
 ### In-Session Mechanical Checks
 
-Where the harness supports hooks (for example Claude Code), the
-committed checks in `.github/idd/checks/` run automatically on edit,
-and again as a blocking commit gate when the session runs `git commit`.
+Where the harness supports hooks — Claude Code via
+`.claude/settings.json`, GitHub Copilot (CLI, cloud coding agent, and
+VS Code agent mode) via `.github/hooks/idd.json` — the committed
+checks in `.github/idd/checks/` run automatically on edit, and again
+as a blocking commit gate when the session runs `git commit`.
 When a mechanical check fails in-session, make a self-correction
 attempt — fix the violation, guided by the rule's constraint and
 rationale in the check's message — before the diff is proposed
