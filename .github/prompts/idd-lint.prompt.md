@@ -46,6 +46,11 @@ For each, produce findings, not file mutations:
      `linter:<rule-code>` entries, the code selected in the repo's
      linter config. Flag rules whose check is missing and checks whose
      rule is gone.
+   - Every check's `files:` globs agree with its rule's `Scope`: a
+     rule scoped narrower than repo-wide (`*`) must have matching
+     globs in the check's `files:` field, and a repo-wide rule's check
+     must omit `files:`. Flag mismatches — an unscoped check for a
+     scoped rule over-enforces outside its scope.
    - Every compiled instruction file (marked `idd:compiled`) still
      matches the `active` `judgment` rules and `Scope` globs it was
      generated from. Flag drift and propose recompilation as a repair.

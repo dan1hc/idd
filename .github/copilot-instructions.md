@@ -239,9 +239,12 @@ there is no separate step to remember:
 2. Otherwise write an ast-grep rule at
    `.github/idd/checks/<check-id>.yml`, where the check-id is
    `idd-<rule-slug>`. Follow the shape in
-   `.github/idd/checks/_template.yml`. The rule's `message` must cite
-   the Constraint and Rationale so a failing check teaches, not just
-   blocks.
+   `.github/idd/checks/_template.yml`, with `severity: error` (the
+   template itself is inert). The rule's `message` must cite the
+   Constraint and Rationale so a failing check teaches, not just
+   blocks. When the rule's `Scope` is narrower than repo-wide (`*`),
+   copy its globs into the check's `files:` field so the check never
+   fires outside the rule's scope; omit `files:` for repo-wide rules.
 3. Never duplicate a stock linter rule as an ast-grep check. Partial
    duplicate coverage produces false confidence, not compliance.
 4. Checks are committed deterministic code. Nothing invokes an LLM at

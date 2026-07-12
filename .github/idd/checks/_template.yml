@@ -7,11 +7,22 @@
 # `ast-grep scan` — on every edit, and as the blocking in-session
 # commit gate.
 #
+# This template lives inside the scanned checks directory, so it is
+# deliberately inert: `severity: off`. A compiled check sets
+# `severity: error`.
+#
+# Scope compiles into `files:`. When the rule's Scope is narrower
+# than repo-wide (`*`), copy its globs into `files:` so the check
+# never fires outside the rule's scope. Omit `files:` entirely for
+# repo-wide rules.
+#
 # The message must cite the Constraint and Rationale so a failing
 # check teaches, not just blocks.
 id: idd-example-rule-slug
 language: python
-severity: error
+severity: off
+files:
+  - "src/api/**"
 rule:
   pattern: getattr($OBJ, $ATTR, $DEFAULT)
 message: >-

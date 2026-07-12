@@ -235,6 +235,8 @@ of source code, and keep doing so as the model frontier moves.
     │   ├── _template.yml
     │   └── *.yml
     ├── templates/
+    │   ├── claude-settings-hooks.json
+    │   └── copilot-hooks.json
     ├── wiki/
     │   ├── _template.md
     │   └── *.md

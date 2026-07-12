@@ -64,10 +64,13 @@ priority order:
 2. **Residual mechanical checks.** For constraints no stock linter
    expresses, a deterministic check is written **at rule-approval
    time** (the §7 workflow) as an `ast-grep` rule with a stable
-   check-id, reviewed and committed alongside the rule itself. Session
-   hooks run only committed deterministic code — on every edit, and as
-   a blocking commit gate when the session runs `git commit` — no LLM
-   call in the commit hot path; they fail hard on a match. The hook
+   check-id, reviewed and committed alongside the rule itself. A
+   rule's `Scope` globs compile into the check's `files:` field, so a
+   scoped check never fires outside the rule's scope; repo-wide rules
+   omit `files:`. Session hooks run only committed deterministic code
+   — on every edit, and as a blocking commit gate when the session
+   runs `git commit` — no LLM call in the commit hot path; they fail
+   hard on a match. The hook
    wiring compiles per-harness: the same two commands, each harness's
    native envelope — Claude Code via `.claude/settings.json`, GitHub
    Copilot (CLI, cloud coding agent, VS Code agent mode) via
@@ -248,6 +251,9 @@ priority order:
   supersession of the CI and pre-commit-framework surfaces.
 - `.github/idd/features/20-copilot-hooks.md` — per-harness hook
   compilation: the GitHub Copilot envelope.
+- `.github/idd/features/21-enforcement-integrity-fixes.md` — the inert
+  check template (`severity: off`), the Scope → `files:` mapping, and
+  locally staged hook templates.
 - GitHub Copilot hooks reference (docs.github.com, 2026) — event set,
   payload shapes, decision-control JSON, and the exit-code semantics
   the Copilot envelope is designed around.

@@ -216,6 +216,14 @@ download ".github/idd/wiki/_template.md" ".github/idd/wiki/_template.md"
 echo -e "  ${BLUE}→${NC} Downloading check template..."
 download ".github/idd/checks/_template.yml" ".github/idd/checks/_template.yml"
 
+# Stage the session-hook templates locally so merge guidance below can
+# point at files that actually exist in this repo; hook destinations
+# are copied from these, one source of truth per install run.
+echo -e "  ${BLUE}→${NC} Downloading session-hook templates..."
+mkdir -p .github/idd/templates
+download ".github/idd/templates/claude-settings-hooks.json" ".github/idd/templates/claude-settings-hooks.json"
+download ".github/idd/templates/copilot-hooks.json" ".github/idd/templates/copilot-hooks.json"
+
 # Wire ast-grep at the committed checks directory. Additive: create a
 # minimal sgconfig.yml when absent, extend ruleDirs when present.
 if [[ ! -f "sgconfig.yml" ]]; then
@@ -249,7 +257,7 @@ write_if_missing ".github/idd/learned.md" "learned"
 # overwrite (additive-installation invariant).
 if [[ ! -f ".claude/settings.json" ]]; then
 	mkdir -p .claude
-	download ".github/idd/templates/claude-settings-hooks.json" ".claude/settings.json"
+	cp ".github/idd/templates/claude-settings-hooks.json" ".claude/settings.json"
 	echo -e "  ${BLUE}→${NC} Created .claude/settings.json (IDD hooks)"
 else
 	echo -e "  ${BLUE}→${NC} .claude/settings.json exists; merge the hooks from .github/idd/templates/claude-settings-hooks.json manually."
@@ -260,7 +268,7 @@ fi
 # .github/hooks/ is a multi-file namespace, so IDD owns idd.json
 # outright — a plain write, no fencing, no merge guidance.
 mkdir -p .github/hooks
-download ".github/idd/templates/copilot-hooks.json" ".github/hooks/idd.json"
+cp ".github/idd/templates/copilot-hooks.json" ".github/hooks/idd.json"
 echo -e "  ${BLUE}→${NC} Installed .github/hooks/idd.json (IDD hooks for Copilot)"
 
 echo -e "  ${BLUE}→${NC} Injecting contract into AI tool locations..."
