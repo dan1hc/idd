@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/dan1hc/idd/compare/v2.1.0...v2.1.1) (2026-07-12)
+
+
+### Bug Fixes
+
+* make check template inert, scope checks via files, stage hook templates ([df37760](https://github.com/dan1hc/idd/commit/df377604435cdb0506e524270059cf327438287a))
+
 # [2.1.0](https://github.com/dan1hc/idd/compare/v2.0.0...v2.1.0) (2026-07-12)
 
 
