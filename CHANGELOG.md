@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/dan1hc/idd/compare/v2.1.1...v2.2.0) (2026-07-12)
+
+
+### Features
+
+* require fixture pairs proving compiled checks fire ([10cb6ad](https://github.com/dan1hc/idd/commit/10cb6ad43345471a20f8f52d76b773cebc7c2d1f))
+
 ## [2.1.1](https://github.com/dan1hc/idd/compare/v2.1.0...v2.1.1) (2026-07-12)
 
 
