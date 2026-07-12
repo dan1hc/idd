@@ -108,7 +108,10 @@ manager:
   the session commits — deterministic code only, no LLM in the commit
   path. The hooks are wired per-harness: Claude Code and GitHub
   Copilot (CLI, cloud coding agent, VS Code agent mode) run the same
-  checks from one checked-in file each.
+  checks from one checked-in file each. Every check ships with a
+  fixture pair proving it actually fires — a dead check is
+  indistinguishable from compliance, so check compilation is itself
+  Red/Green.
 - **Judgment rules** compile into path-scoped instruction files
   (Copilot `applyTo` instructions, nested `CLAUDE.md` sections,
   `.cursor/rules`) so they're injected at edit time, and a mandatory
@@ -186,6 +189,7 @@ IDD uses Markdown-first context files the team owns and edits.
 | `.github/idd/wiki/*.md` | Durable concept map: bounded entries that feature specs and the contract anchor at |
 | `.github/idd/learned.md` | Explicit user-approved rules that override discovered conventions — the authored source the enforcement layer compiles |
 | `.github/idd/checks/*.yml` | Compiled ast-grep checks for `mechanical` learned rules, run by the gates and in-session hooks |
+| `.github/idd/check-tests/*-test.yml` | Fixture pairs proving each check fires — a dead check looks like compliance; `/idd-lint` re-runs the suite |
 | `.github/idd/templates/*` | Session-hook templates the installer wires additively (edit-time checks, in-session commit gate) — one envelope per harness: Claude Code and GitHub Copilot |
 | `.github/hooks/idd.json` | The compiled Copilot hooks — same checks, Copilot's stdout-JSON envelope |
 | `.github/idd/features/*.md` | The primary planning and execution layer: bounded feature specs with acceptance criteria and glossary anchors |
@@ -234,6 +238,9 @@ of source code, and keep doing so as the model frontier moves.
     ├── checks/
     │   ├── _template.yml
     │   └── *.yml
+    ├── check-tests/
+    │   ├── _template-test.yml
+    │   └── *-test.yml
     ├── templates/
     │   ├── claude-settings-hooks.json
     │   └── copilot-hooks.json

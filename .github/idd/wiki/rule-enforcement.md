@@ -67,7 +67,12 @@ priority order:
    check-id, reviewed and committed alongside the rule itself. A
    rule's `Scope` globs compile into the check's `files:` field, so a
    scoped check never fires outside the rule's scope; repo-wide rules
-   omit `files:`. Session hooks run only committed deterministic code
+   omit `files:`. Every check lands with a fixture pair at
+   `.github/idd/check-tests/<check-id>-test.yml` — an `invalid`
+   snippet the check must flag and a `valid` one it must not — proving
+   at authoring time that the check actually fires; `ast-grep test`
+   re-proves it thereafter. Session hooks run only committed
+   deterministic code
    — on every edit, and as a blocking commit gate when the session
    runs `git commit` — no LLM call in the commit hot path; they fail
    hard on a match. The hook
@@ -226,6 +231,24 @@ priority order:
   surface. `.github/hooks/` is a multi-file namespace, so IDD owns
   `.github/hooks/idd.json` outright — a plain installer write, no
   marker fencing, no merge guidance.
+- **2026-07 — Every compiled check ships with a fixture pair; the
+  dead check is treated as the primary enforcement failure mode.** A
+  check whose pattern is subtly wrong never fires, never errors, and
+  is indistinguishable from compliance — the same
+  partial-coverage-masquerading-as-full-coverage defect this layer
+  exists to prevent, now one level down. So compiling a mechanical
+  rule is itself Red/Green: the §7 procedure requires a fixture file
+  (`invalid` snippets the check must flag, `valid` snippets it must
+  not) committed alongside the check, verified at authoring time and
+  re-verified by `/idd-lint` running
+  `ast-grep test -t .github/idd/check-tests --skip-snapshot-tests`
+  (exit 0 on pass, non-zero on any dead check; measured, not assumed).
+  The harness skips `severity: off` rules and silently ignores
+  missing or orphaned fixtures, so `/idd-lint` also asserts the
+  check ↔ fixture file pairing in both directions — pairing drift is
+  a finding, not a silent pass. The explicit `-t` flag keeps the
+  command working in repos whose pre-existing `sgconfig.yml` was only
+  extended with `ruleDirs`.
 
 ## Evidence
 
@@ -254,6 +277,8 @@ priority order:
 - `.github/idd/features/21-enforcement-integrity-fixes.md` — the inert
   check template (`severity: off`), the Scope → `files:` mapping, and
   locally staged hook templates.
+- `.github/idd/features/22-check-fixtures.md` — the fixture-pair
+  requirement and the `ast-grep test` wiring.
 - GitHub Copilot hooks reference (docs.github.com, 2026) — event set,
   payload shapes, decision-control JSON, and the exit-code semantics
   the Copilot envelope is designed around.

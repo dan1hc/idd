@@ -245,9 +245,17 @@ there is no separate step to remember:
    blocks. When the rule's `Scope` is narrower than repo-wide (`*`),
    copy its globs into the check's `files:` field so the check never
    fires outside the rule's scope; omit `files:` for repo-wide rules.
-3. Never duplicate a stock linter rule as an ast-grep check. Partial
+3. Compiling a check is itself Red/Green: write a fixture pair at
+   `.github/idd/check-tests/<check-id>-test.yml` (shape in
+   `_template-test.yml` there) — `invalid` snippets the check must
+   flag, `valid` snippets it must not — and run
+   `ast-grep test -t .github/idd/check-tests --skip-snapshot-tests`
+   before approval. A check without a firing fixture is a dead check:
+   it looks like compliance. `linter:<rule-code>` entries need no
+   fixture — the stock linter owns its own pattern correctness.
+4. Never duplicate a stock linter rule as an ast-grep check. Partial
    duplicate coverage produces false confidence, not compliance.
-4. Checks are committed deterministic code. Nothing invokes an LLM at
+5. Checks are committed deterministic code. Nothing invokes an LLM at
    commit time; the session's hooks run only what is already reviewed
    and committed.
 

@@ -202,7 +202,7 @@ echo ""
 echo -e "${BOLD}Installing IDD${NC}"
 echo ""
 
-mkdir -p .github/idd/features .github/idd/wiki .github/idd/checks .github/prompts
+mkdir -p .github/idd/features .github/idd/wiki .github/idd/checks .github/idd/check-tests .github/prompts
 
 echo -e "  ${BLUE}→${NC} Downloading instructions..."
 download ".github/copilot-instructions.md" ".github/copilot-instructions.md"
@@ -215,6 +215,7 @@ download ".github/idd/wiki/_template.md" ".github/idd/wiki/_template.md"
 
 echo -e "  ${BLUE}→${NC} Downloading check template..."
 download ".github/idd/checks/_template.yml" ".github/idd/checks/_template.yml"
+download ".github/idd/check-tests/_template-test.yml" ".github/idd/check-tests/_template-test.yml"
 
 # Stage the session-hook templates locally so merge guidance below can
 # point at files that actually exist in this repo; hook destinations
@@ -227,7 +228,7 @@ download ".github/idd/templates/copilot-hooks.json" ".github/idd/templates/copil
 # Wire ast-grep at the committed checks directory. Additive: create a
 # minimal sgconfig.yml when absent, extend ruleDirs when present.
 if [[ ! -f "sgconfig.yml" ]]; then
-	printf 'ruleDirs:\n  - .github/idd/checks\n' > "sgconfig.yml"
+	printf 'ruleDirs:\n  - .github/idd/checks\ntestConfigs:\n  - testDir: .github/idd/check-tests\n' > "sgconfig.yml"
 	echo -e "  ${BLUE}→${NC} Created sgconfig.yml"
 elif ! grep -qF ".github/idd/checks" "sgconfig.yml"; then
 	if grep -qE '^ruleDirs:' "sgconfig.yml"; then

@@ -51,6 +51,16 @@ For each, produce findings, not file mutations:
      globs in the check's `files:` field, and a repo-wide rule's check
      must omit `files:`. Flag mismatches — an unscoped check for a
      scoped rule over-enforces outside its scope.
+   - Every check has a live fixture, and every fixture a check:
+     `.github/idd/checks/<id>.yml` pairs with
+     `.github/idd/check-tests/<id>-test.yml` in both directions
+     (`_template` files exempt; `linter:` check-ids need no fixture).
+     Then run
+     `ast-grep test -t .github/idd/check-tests --skip-snapshot-tests`
+     — a non-zero exit means a dead or drifted check; report each
+     failure as a finding. The harness silently ignores unpaired
+     fixtures and skips `severity: off` rules, so the file pairing
+     above must be asserted, not assumed.
    - Every compiled instruction file (marked `idd:compiled`) still
      matches the `active` `judgment` rules and `Scope` globs it was
      generated from. Flag drift and propose recompilation as a repair.

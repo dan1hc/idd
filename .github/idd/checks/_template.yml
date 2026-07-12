@@ -16,6 +16,11 @@
 # never fires outside the rule's scope. Omit `files:` entirely for
 # repo-wide rules.
 #
+# Every check lands with a fixture pair at
+# .github/idd/check-tests/<check-id>-test.yml (see the template
+# there) proving the pattern actually fires — dead checks look like
+# compliance.
+#
 # The message must cite the Constraint and Rationale so a failing
 # check teaches, not just blocks.
 id: idd-example-rule-slug
