@@ -193,7 +193,7 @@
         <li><div><strong>Think in the wiki</strong><p>You and Copilot flesh out a concept, subsystem, or feature as one or more wiki entries. This is the design surface. No code yet.</p></div></li>
         <li><div><strong>Derive feature specs</strong><p>Run <code>/idd-feature</code>. The wiki entry holds the concept; each feature spec is one bounded change to it. A wiki entry can spawn many feature specs over time — initial build, additions, refactors.</p></div></li>
         <li><div><strong>Execute</strong><p>Copilot works through specs sequentially under Red / Green TDD, then writes back so prose follows source.</p></div></li>
-        <li><div><strong>Enforce</strong><p>Approving a learned rule compiles it in the same session: mechanical rules become linter config or committed ast-grep checks that session hooks run on every edit and as a blocking gate on <code>git commit</code>; judgment rules become path-scoped instruction files plus a mandatory in-session review of the diff before it's proposed. Everything runs in-session — no CI, no git hooks. Enforced rules drop out of prose, keeping the rule set small.</p></div></li>
+        <li><div><strong>Enforce</strong><p>Approving a learned rule compiles it in the same session: mechanical rules become linter config or committed ast-grep checks that session hooks run on every edit and as a blocking gate on <code>git commit</code>; judgment rules become path-scoped instruction files plus the mandatory <code>/idd-judgment-review</code> — a per-rule review of the final change set that writes a fingerprint-bound attestation, verified deterministically by the commit and completion gates so it cannot be silently skipped. Everything runs in-session — no CI, no git hooks. Enforced rules drop out of prose, keeping the rule set small.</p></div></li>
         <li><div><strong>Review</strong><p>Run <code>/idd-lint</code> on demand to sweep for drift, duplicates, orphans, broken anchors, and enforcement sync (rule ↔ check ↔ compiled artifact).</p></div></li>
       </ol>
     </section>
@@ -211,8 +211,15 @@
       </p>
       <ol class="steps">
         <li><div><strong>Install ast-grep</strong><p><code>brew install ast-grep</code> (or <code>npm i -g @ast-grep/cli</code>). Runs the committed mechanical checks on every edit and as the blocking in-session commit gate.</p></div></li>
-        <li><div><strong>Install jq</strong><p><code>brew install jq</code>. The hooks use it to read the harness event payload.</p></div></li>
+        <li><div><strong>Install jq</strong><p><code>brew install jq</code>. The hooks use it to read the harness event payload and verify the judgment attestation.</p></div></li>
       </ol>
+      <p class="lede" style="margin-top:16px; font-size:0.98rem;">
+        The judgment gates are deterministic: they verify the
+        session-local attestation written by
+        <code>/idd-judgment-review</code> (in <code>.idd-state/</code>,
+        gitignored) against fingerprints of the exact change set and
+        rule set — no LLM ever runs inside a hook.
+      </p>
     </section>
 
     <section>
@@ -225,11 +232,13 @@
 │   ├── idd-discover.prompt.md
 │   ├── idd-init.prompt.md
 │   ├── idd-feature.prompt.md
+│   ├── idd-judgment-review.prompt.md
 │   └── idd-lint.prompt.md
 └── idd/
     ├── architecture.md
     ├── conventions.md
     ├── learned.md
+    ├── bin/
     ├── checks/
     ├── check-tests/
     ├── templates/

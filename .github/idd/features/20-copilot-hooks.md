@@ -1,6 +1,14 @@
 # Feature: copilot-hooks
 
 > **Status**: `complete`
+>
+> **Envelope superseded by `25-deterministic-gates-and-hook-hardening`**
+> (2026-07): field deployment showed the docs-derived envelope drifted
+> from the live contract — event names are PascalCase, entries use
+> `command`/`timeout`, and VS Code reads deny decisions under
+> `hookSpecificOutput`. AC-1's `preToolUse`/`postToolUse` casing check
+> is historical and no longer passes by design; the surviving ACs
+> assert behavior that still holds.
 
 This file is the primary execution and maintenance contract for
 compiling the in-session enforcement hooks into GitHub Copilot's

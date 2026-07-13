@@ -1,6 +1,15 @@
 # Feature: check-fixtures
 
 > **Status**: `complete`
+>
+> **Template location superseded by
+> `25-deterministic-gates-and-hook-hardening`** (2026-07): the fixture
+> shape template moved to `.github/idd/templates/check-test.yml`,
+> outside the test discovery path (the in-path template produced
+> `Configuration not found!` noise). AC-1 and AC-6 reference the old
+> location and no longer pass by design; spec 25 AC-5/AC-7 assert the
+> replacement. The fixture-pair requirement and `ast-grep test`
+> wiring stand.
 
 This file is the primary execution and maintenance contract for the
 fixture-pair requirement on compiled mechanical checks.

@@ -86,6 +86,7 @@ Four user-initiated slash commands drive the workflow:
 - `/idd-discover` — brownfield: seed architecture, conventions, and wiki entries from existing code.
 - `/idd-init` — greenfield: interview the user and write the first artifacts.
 - `/idd-feature` — derive a bounded feature spec from a wiki entry.
+- `/idd-judgment-review` — review the change set against scope-matched judgment rules and write the fingerprint-bound attestation the gates verify.
 - `/idd-lint` — repo-wide sweep for drift, duplicates, orphans, and broken anchors.
 
 The repository contract stays stable while the models improve. That is the
@@ -114,10 +115,17 @@ manager:
   Red/Green.
 - **Judgment rules** compile into path-scoped instruction files
   (Copilot `applyTo` instructions, nested `CLAUDE.md` sections,
-  `.cursor/rules`) so they're injected at edit time, and a mandatory
-  in-session review re-checks the diff against exactly the rules whose
-  scope matches before it is proposed for human review — riding the
-  session's own model access, no extra credential.
+  `.cursor/rules`) so they're injected at edit time — but compilation
+  only guides generation. The mandatory in-session review
+  (`/idd-judgment-review`) evaluates the final change set against
+  exactly the rules whose scope matches, per rule with evidence, and
+  writes a session-local attestation bound to fingerprints of the
+  exact change set and rule set. Deterministic commit and completion
+  gates verify that attestation — a missing, failed, or stale review
+  blocks, so it cannot be silently skipped. Riding the session's own
+  model access, no extra credential; the gates themselves never
+  invoke an LLM. (Harnesses without hooks fall back to the same check
+  run manually per contract §9.)
 - **Enforced rules drop out of prose entirely**, which keeps the rule
   set the model actually reads small enough to stay salient.
 
@@ -168,8 +176,10 @@ solely own:
 - downloads `.github/copilot-instructions.md`, the feature/wiki/check templates, and the slash-command prompts
 - wires `sgconfig.yml` so ast-grep finds the committed checks (created if missing, extended if present)
 - injects the operating contract into `.cursorrules` and `CLAUDE.md` behind `idd:begin`/`idd:end` markers, preserving existing content
-- creates `.claude/settings.json` hooks — edit-time checks plus the in-session commit gate — when the file does not already exist
+- creates `.claude/settings.json` hooks — edit-time checks, the commit gate, and the completion gate — when the file does not already exist
 - installs `.github/hooks/idd.json` — the same hooks in GitHub Copilot's envelope, read by the Copilot CLI, cloud coding agent, and VS Code agent mode
+- ships the deterministic judgment gate helper (`.github/idd/bin/idd-gate.sh`) and gitignores `.idd-state/`, the session-local attestation directory
+- warns when any authoritative IDD artifact is gitignored — enforcement must be committed, reviewable code
 
 | Tool | Reads from |
 |------|-----------|
@@ -190,12 +200,14 @@ IDD uses Markdown-first context files the team owns and edits.
 | `.github/idd/learned.md` | Explicit user-approved rules that override discovered conventions — the authored source the enforcement layer compiles |
 | `.github/idd/checks/*.yml` | Compiled ast-grep checks for `mechanical` learned rules, run by the gates and in-session hooks |
 | `.github/idd/check-tests/*-test.yml` | Fixture pairs proving each check fires — a dead check looks like compliance; `/idd-lint` re-runs the suite |
-| `.github/idd/templates/*` | Session-hook templates the installer wires additively (edit-time checks, in-session commit gate) — one envelope per harness: Claude Code and GitHub Copilot |
-| `.github/hooks/idd.json` | The compiled Copilot hooks — same checks, Copilot's stdout-JSON envelope |
+| `.github/idd/templates/*` | Shape templates (check, fixture) and per-harness hook templates — kept outside every scanned or executed path so nothing inert is ever counted as live |
+| `.github/idd/bin/idd-gate.sh` | Deterministic fingerprint + attestation gate helper shared by `/idd-judgment-review` and the hooks — never invokes an LLM |
+| `.github/hooks/idd.json` | The compiled Copilot hooks — same checks and gates, Copilot's stdout-JSON envelope |
 | `.github/idd/features/*.md` | The primary planning and execution layer: bounded feature specs with acceptance criteria and glossary anchors |
 | `.github/prompts/idd-discover.prompt.md` | On-demand `/idd-discover` command for brownfield discovery |
 | `.github/prompts/idd-init.prompt.md` | On-demand `/idd-init` command for greenfield bootstrap |
 | `.github/prompts/idd-feature.prompt.md` | On-demand `/idd-feature` command to derive a feature spec from a wiki entry |
+| `.github/prompts/idd-judgment-review.prompt.md` | The `/idd-judgment-review` workflow — the mandatory §9 review that writes the attestation |
 | `.github/prompts/idd-lint.prompt.md` | On-demand `/idd-lint` command for repo-wide drift, duplicate, orphan, and broken-anchor sweeps |
 
 ## Why Feature Specs Matter
@@ -230,18 +242,21 @@ of source code, and keep doing so as the model frontier moves.
 │   ├── idd-discover.prompt.md
 │   ├── idd-init.prompt.md
 │   ├── idd-feature.prompt.md
+│   ├── idd-judgment-review.prompt.md
 │   └── idd-lint.prompt.md
 └── idd/
     ├── architecture.md
     ├── conventions.md
     ├── learned.md
+    ├── bin/
+    │   └── idd-gate.sh
     ├── checks/
-    │   ├── _template.yml
     │   └── *.yml
     ├── check-tests/
-    │   ├── _template-test.yml
     │   └── *-test.yml
     ├── templates/
+    │   ├── check.yml
+    │   ├── check-test.yml
     │   ├── claude-settings-hooks.json
     │   └── copilot-hooks.json
     ├── wiki/

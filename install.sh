@@ -180,9 +180,9 @@ EOF
 
 ## Rules
 
-| Rule Type | Scope | Constraint | Rationale | Enforcement | Check-Id | Status |
-|-----------|-------|------------|-----------|-------------|----------|--------|
-|           |       |            |           |             |          | active |
+| Rule-Id | Rule Type | Scope | Constraint | Rationale | Enforcement | Check-Id | Status |
+|---------|-----------|-------|------------|-----------|-------------|----------|--------|
+|         |           |       |            |           |             |          | active |
 
 ## Notes
 
@@ -202,7 +202,7 @@ echo ""
 echo -e "${BOLD}Installing IDD${NC}"
 echo ""
 
-mkdir -p .github/idd/features .github/idd/wiki .github/idd/checks .github/idd/check-tests .github/prompts
+mkdir -p .github/idd/features .github/idd/wiki .github/idd/checks .github/idd/check-tests .github/idd/bin .github/prompts
 
 echo -e "  ${BLUE}→${NC} Downloading instructions..."
 download ".github/copilot-instructions.md" ".github/copilot-instructions.md"
@@ -213,17 +213,30 @@ download ".github/idd/features/_template.md" ".github/idd/features/_template.md"
 echo -e "  ${BLUE}→${NC} Downloading wiki template..."
 download ".github/idd/wiki/_template.md" ".github/idd/wiki/_template.md"
 
-echo -e "  ${BLUE}→${NC} Downloading check template..."
-download ".github/idd/checks/_template.yml" ".github/idd/checks/_template.yml"
-download ".github/idd/check-tests/_template-test.yml" ".github/idd/check-tests/_template-test.yml"
-
-# Stage the session-hook templates locally so merge guidance below can
-# point at files that actually exist in this repo; hook destinations
-# are copied from these, one source of truth per install run.
-echo -e "  ${BLUE}→${NC} Downloading session-hook templates..."
+# All shape and hook templates live under .github/idd/templates/ —
+# never inside a scanned rule/test directory or a hook guard path, so
+# nothing inert is ever counted, executed, or half-parsed. Hook
+# destinations are copied from these, one source of truth per run.
+echo -e "  ${BLUE}→${NC} Downloading templates..."
 mkdir -p .github/idd/templates
+download ".github/idd/templates/check.yml" ".github/idd/templates/check.yml"
+download ".github/idd/templates/check-test.yml" ".github/idd/templates/check-test.yml"
 download ".github/idd/templates/claude-settings-hooks.json" ".github/idd/templates/claude-settings-hooks.json"
 download ".github/idd/templates/copilot-hooks.json" ".github/idd/templates/copilot-hooks.json"
+
+# Deterministic judgment gate helper: fingerprints and attestation
+# verification for the commit and completion gates. Never invokes an
+# LLM.
+echo -e "  ${BLUE}→${NC} Downloading judgment gate helper..."
+download ".github/idd/bin/idd-gate.sh" ".github/idd/bin/idd-gate.sh"
+
+# Session-local judgment attestations are evidence for the current
+# change set, not history — never committed.
+if [[ -f ".gitignore" ]]; then
+	grep -qxF '.idd-state/' ".gitignore" || printf '\n.idd-state/\n' >> ".gitignore"
+else
+	printf '.idd-state/\n' > ".gitignore"
+fi
 
 # Wire ast-grep at the committed checks directory. Additive: create a
 # minimal sgconfig.yml when absent, extend ruleDirs when present.
@@ -246,6 +259,7 @@ download ".github/prompts/idd-discover.prompt.md" ".github/prompts/idd-discover.
 download ".github/prompts/idd-init.prompt.md" ".github/prompts/idd-init.prompt.md"
 download ".github/prompts/idd-feature.prompt.md" ".github/prompts/idd-feature.prompt.md"
 download ".github/prompts/idd-lint.prompt.md" ".github/prompts/idd-lint.prompt.md"
+download ".github/prompts/idd-judgment-review.prompt.md" ".github/prompts/idd-judgment-review.prompt.md"
 
 echo -e "  ${BLUE}→${NC} Scaffolding artifact files..."
 write_if_missing ".github/idd/architecture.md" "architecture"
@@ -283,14 +297,25 @@ for tool_file in ".cursorrules" "CLAUDE.md"; do
 	inject_idd_block "$tool_file" "$contract_body"
 done
 
+# Authoritative IDD artifacts are committed, reviewable code —
+# gitignored enforcement silently disappears for every other clone.
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+	for artifact in .github/copilot-instructions.md .github/idd .github/prompts .github/hooks/idd.json sgconfig.yml .claude/settings.json; do
+		if git check-ignore -q "$artifact" 2>/dev/null; then
+			echo -e "  ${BOLD}!${NC} WARNING: $artifact is gitignored — IDD artifacts must be tracked (only .idd-state/ is session-local)."
+		fi
+	done
+fi
+
 echo ""
 echo -e "${GREEN}✓${NC} IDD installed successfully!"
 echo ""
 echo 'Open Copilot Chat and invoke one of the IDD slash commands:'
-echo '  - /idd-init       Bootstrap a new repository.'
-echo '  - /idd-discover   Seed artifacts from an existing repository.'
-echo '  - /idd-feature    Derive a bounded feature spec from a wiki entry.'
-echo '  - /idd-lint       Sweep for drift, duplicates, orphans, and broken anchors.'
+echo '  - /idd-init             Bootstrap a new repository.'
+echo '  - /idd-discover         Seed artifacts from an existing repository.'
+echo '  - /idd-feature          Derive a bounded feature spec from a wiki entry.'
+echo '  - /idd-judgment-review  Review the change set against judgment rules and attest.'
+echo '  - /idd-lint             Sweep for drift, duplicates, orphans, and broken anchors.'
 echo ""
 echo -e "Docs: ${BLUE}https://dan1hc.github.io/idd${NC}"
 echo ""

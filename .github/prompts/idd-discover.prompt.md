@@ -30,6 +30,13 @@ artifact files. The main agent is the only writer. See
    integrates with, what topology and data stores it depends on.
 5. If evidence is ambiguous, record that ambiguity in `Open Questions`
    or `Evidence` instead of guessing.
+6. Any learned rule you derive — from this repository's history or
+   imported from another rule set — lands in `learned.md` as
+   `Status: proposed`, never `active`. Activation requires repository
+   evidence that the paths, layers, and dependencies the rule names
+   exist here, plus explicit user approval (contract §7). Rule
+   `Scope` must be real glob patterns over this repository's actual
+   paths — a semantic label (`interfaces`, `models`) is not a glob.
 
 ## Safety
 

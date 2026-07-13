@@ -12,8 +12,9 @@
 #
 #   ast-grep test -t .github/idd/check-tests --skip-snapshot-tests
 #
-# This template's rule is inert (severity: off), so the harness skips
-# these cases; a real fixture runs against its live check.
+# This template lives under .github/idd/templates/, outside the test
+# discovery path, so the harness never attempts to run it — copy it
+# to .github/idd/check-tests/<check-id>-test.yml alongside the check.
 id: idd-example-rule-slug
 valid:
   - "x = getattr(obj, name)"

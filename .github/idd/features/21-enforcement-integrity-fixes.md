@@ -1,6 +1,14 @@
 # Feature: enforcement-integrity-fixes
 
 > **Status**: `complete`
+>
+> **Partially superseded by `25-deterministic-gates-and-hook-hardening`**
+> (2026-07): the inert-template mechanism (`severity: off` inside the
+> scanned checks directory) is replaced by relocation — templates now
+> live at `.github/idd/templates/check.yml`, outside every discovery
+> path. AC-1 and AC-2 reference the old location and no longer pass by
+> design; spec 25 AC-5 asserts the replacement. The Scope → `files:`
+> mapping and staged-templates fixes stand.
 
 This file is the primary execution and maintenance contract for three
 bounded integrity fixes to the enforcement layer, found by exercising

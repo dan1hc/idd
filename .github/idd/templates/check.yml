@@ -7,9 +7,10 @@
 # `ast-grep scan` — on every edit, and as the blocking in-session
 # commit gate.
 #
-# This template lives inside the scanned checks directory, so it is
-# deliberately inert: `severity: off`. A compiled check sets
-# `severity: error`.
+# This template lives under .github/idd/templates/, outside the
+# scanned checks directory, so it is never counted or executed as a
+# live check — copy it to .github/idd/checks/<check-id>.yml to
+# compile a rule.
 #
 # Scope compiles into `files:`. When the rule's Scope is narrower
 # than repo-wide (`*`), copy its globs into `files:` so the check
@@ -25,7 +26,7 @@
 # check teaches, not just blocks.
 id: idd-example-rule-slug
 language: python
-severity: off
+severity: error
 files:
   - "src/api/**"
 rule:

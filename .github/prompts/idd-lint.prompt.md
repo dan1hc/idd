@@ -41,6 +41,21 @@ For each, produce findings, not file mutations:
    relevant wiki entry.
 7. **Enforcement sync.** Compare the `learned.md` Rules table against
    its compiled artifacts, in both directions:
+   - Every rule has a `Rule-Id`: present, unique, lowercase
+     kebab-case. Flag missing, duplicate, or malformed IDs, and
+     compiled instruction files whose listed `Rule-Id` values no
+     longer resolve.
+   - Every `Scope` is a valid glob (`*` or glob patterns); a semantic
+     label (`interfaces`, `callbacks`, `models`) is not a glob — flag
+     it. Flag `active` rules whose scopes or constraints reference
+     paths, layers, or dependencies this repository does not contain
+     (unreconciled foreign rules).
+   - No authoritative artifact is gitignored or untracked: run
+     `git check-ignore` over `.github/copilot-instructions.md`,
+     `.github/idd/`, `.github/prompts/`, `.github/hooks/idd.json`,
+     `sgconfig.yml`, and `.claude/settings.json`, and flag any hit.
+     Conversely, flag a committed `.idd-state/` — attestations are
+     session-local and must never be committed.
    - Every `mechanical` rule with a check-id maps to a live check —
      either a `.github/idd/checks/<check-id>.yml` file or, for
      `linter:<rule-code>` entries, the code selected in the repo's

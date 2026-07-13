@@ -18,12 +18,21 @@ These are the authoritative IDD files:
 - `.github/idd/wiki/*.md`
 - `.github/idd/features/_template.md`
 - `.github/idd/features/*.md`
-- `.github/idd/checks/_template.yml`
 - `.github/idd/checks/*.yml`
+- `.github/idd/check-tests/*-test.yml`
+- `.github/idd/templates/*` (shape and hook templates — never inside
+  scanned or executed paths)
+- `.github/idd/bin/idd-gate.sh`
 - `.github/prompts/idd-discover.prompt.md`
 - `.github/prompts/idd-init.prompt.md`
 - `.github/prompts/idd-feature.prompt.md`
+- `.github/prompts/idd-judgment-review.prompt.md`
 - `.github/prompts/idd-lint.prompt.md`
+
+All of these are committed, reviewable code — none may be gitignored
+or left untracked (the installer and `/idd-lint` flag violations).
+Session-local state under `.idd-state/` is the deliberate exception:
+gitignored, never committed.
 
 If one of the top-level Markdown artifacts (`architecture.md`,
 `conventions.md`, `learned.md`) is missing, recreate it with the standard
@@ -189,10 +198,18 @@ Rules:
 
 Rule schema (the `Rules` table columns):
 
+- `Rule-Id` — required, stable, unique, immutable, lowercase kebab-case
+  identifier (`phoenix-thin-callbacks`). Attestations,
+  compiled instruction files, and lint findings name rules by
+  `Rule-Id` — never by row text or position. Renaming is a
+  deprecate-and-recreate operation.
 - `Rule Type` — short category label (imports, errors, naming, …).
 - `Scope` — one or more comma-separated glob patterns matching the
   files the rule governs (`src/api/**`); `*` means repo-wide. Globs
-  only — no other scope vocabulary.
+  only — no other scope vocabulary. Validate at creation and
+  migration time: a semantic label (`interfaces`, `callbacks`,
+  `models`, `config`) is not a glob and must be rejected or converted
+  to the real paths before the rule is recorded.
 - `Constraint` — the rule itself, stated imperatively.
 - `Rationale` — why the team chose this; cited whenever the rule is
   enforced or re-explained.
@@ -221,11 +238,24 @@ yet captured:
    directly asked you to save the rule.
 3. Record rules in the table format defined above.
 
-If a repository still carries the older five-column table
-(`Rule Type | Scope | Constraint | Rationale | Status`), migrate the
-header in place on first touch and backfill existing rows with
-`Enforcement: judgment` and an empty `Check-Id`. Never drop rule
-content during migration.
+Discovered and imported rules never activate without reconciliation:
+any rule arriving from `/idd-discover`, from another repository, or
+from a shared rule set lands as `Status: proposed`, and activation
+requires (a) repository evidence that the paths, layers, and
+dependencies the rule names actually exist here, and (b) explicit
+user approval. A rule prescribing structures this repository does not
+contain is misconfiguration, not guidance.
+
+If a repository still carries an older table — five columns
+(`Rule Type | Scope | Constraint | Rationale | Status`) or seven
+(without `Rule-Id`) — migrate the header in place on first touch.
+Backfill `Enforcement: judgment` and an empty `Check-Id` where those
+columns are new, and generate a `Rule-Id` for every row
+deterministically: kebab-case the constraint's distinctive leading
+words; on collision, report the colliding rows to the user for manual
+resolution rather than inventing a suffix. Validate every migrated
+`Scope` as a glob and surface non-glob scopes as findings. Never drop
+rule content during migration.
 
 ### Compiling a `mechanical` rule
 
@@ -239,15 +269,16 @@ there is no separate step to remember:
 2. Otherwise write an ast-grep rule at
    `.github/idd/checks/<check-id>.yml`, where the check-id is
    `idd-<rule-slug>`. Follow the shape in
-   `.github/idd/checks/_template.yml`, with `severity: error` (the
-   template itself is inert). The rule's `message` must cite the
-   Constraint and Rationale so a failing check teaches, not just
-   blocks. When the rule's `Scope` is narrower than repo-wide (`*`),
-   copy its globs into the check's `files:` field so the check never
-   fires outside the rule's scope; omit `files:` for repo-wide rules.
+   `.github/idd/templates/check.yml` (templates live outside the
+   scanned checks directory so nothing inert is ever counted or
+   executed). The rule's `message` must cite the Constraint and
+   Rationale so a failing check teaches, not just blocks. When the
+   rule's `Scope` is narrower than repo-wide (`*`), copy its globs
+   into the check's `files:` field so the check never fires outside
+   the rule's scope; omit `files:` for repo-wide rules.
 3. Compiling a check is itself Red/Green: write a fixture pair at
    `.github/idd/check-tests/<check-id>-test.yml` (shape in
-   `_template-test.yml` there) — `invalid` snippets the check must
+   `.github/idd/templates/check-test.yml`) — `invalid` snippets the check must
    flag, `valid` snippets it must not — and run
    `ast-grep test -t .github/idd/check-tests --skip-snapshot-tests`
    before approval. A check without a firing fixture is a dead check:
@@ -274,8 +305,11 @@ Also in the same session and diff as approval:
      (Cursor)
 2. Every compiled file begins with the marker
    `<!-- idd:compiled from .github/idd/learned.md — do not edit -->`
-   followed by the source rule ids it was generated from. Humans and
-   agents edit `learned.md`, never compiled output.
+   followed by the source `Rule-Id` values it was generated from.
+   Humans and agents edit `learned.md`, never compiled output.
+   Compilation state is reported as `current`, `stale`, or `missing`
+   — never `pass`: compiled files guide generation and are not
+   evidence that the judgment review ran (§9).
 3. Rules with status `enforced` or `deprecated` are omitted from
    compiled instruction files: enforcement has replaced prose salience
    for them, which is what keeps the injected rule set small.
@@ -344,13 +378,27 @@ you look for contradictions, omissions, stale anchors, and low-confidence claims
    is exhaustive.
 7. Work directly with repository files and artifact templates. Do not assume a
    hidden backstop exists.
-8. Run the in-session judgment review: re-read the diff you are about
-   to propose against the `judgment` rules in `learned.md` whose
-   `Scope` globs match the files you changed — those rules and the
-   diff, nothing else. Fix violations in this session before proposing
-   the diff; if the user explicitly overrides a rule, record that in
-   the diff description. This pass is mandatory for every
-   code-changing task, not an on-demand command.
+8. Run the in-session judgment review by executing the
+   `/idd-judgment-review` workflow
+   (`.github/prompts/idd-judgment-review.prompt.md`): fingerprint the
+   change set, match changed paths against the `Scope` globs of
+   `active` `judgment` rules, review the relevant diff against those
+   rules and nothing else, fix violations, re-run against the new
+   fingerprint, and write the attestation
+   (`.idd-state/judgment-review.json`). This pass is mandatory for
+   every code-changing task, not an on-demand command; if the user
+   explicitly overrides a rule, record that in the diff description.
+   Judgment *compilation* (§7's instruction files) is never evidence
+   this review ran — compilation reports `current`/`stale`/`missing`,
+   review reports `pass`/`fail`/`missing`/`stale`, and only the
+   review may report `pass`. Where the harness runs hooks, the commit
+   and completion gates verify the attestation deterministically; a
+   missing or stale attestation blocks. Never state that IDD
+   validation is complete without a current passing attestation for
+   the exact state you are proposing — in harnesses without hooks
+   this is the unhooked backstop: run the workflow and check
+   `bash .github/idd/bin/idd-gate.sh gate worktree` yourself before
+   declaring completion.
 
 If a file is stale, fix it in the same task rather than leaving drift behind.
 

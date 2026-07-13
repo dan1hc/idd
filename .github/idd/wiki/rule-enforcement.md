@@ -33,8 +33,13 @@ actually runs. It is capability-invariant by construction.
 
 ### Rule lifecycle
 
-Rules in `learned.md` carry `Enforcement` (`mechanical | judgment`)
-and `Check-Id` columns, and the `Status` column follows the lifecycle:
+Every rule in `learned.md` carries a stable `Rule-Id` — an immutable,
+unique, lowercase kebab-case identifier that attestations, compiled
+instruction files, and lint findings reference (matching rules by row
+text or position is too fragile to build evidence on). Rules also
+carry `Enforcement` (`mechanical | judgment`) and `Check-Id` columns —
+`Check-Id` belongs to mechanical enforcement only and stays empty on
+judgment rules — and the `Status` column follows the lifecycle:
 
 ```
 proposed → active → enforced → deprecated
@@ -98,7 +103,13 @@ priority order:
    rides the session's existing model access: no extra credential, no
    external service, no CI. Violations are fixed in the same session;
    the author overrides by explicit choice, recorded in the diff
-   description.
+   description. Review is executable and attestable, not procedural:
+   it runs as `/idd-judgment-review`, writes a fingerprint-bound
+   attestation, and deterministic gates verify that attestation at
+   commit and completion time — see `wiki::judgment-review::summary`.
+   Target 3 (compilation) is never evidence that this target ran;
+   compilation guides generation, review evaluates the result, and
+   only review may report `pass`.
 5. **In-session correction.** Where the harness supports hooks, check
    failures re-enter the same task's context with the rule, rationale,
    and prior citation, and a self-correction attempt is required before
@@ -126,6 +137,22 @@ priority order:
 - **Measured, not vibed.** The success metric is the repeat-comment
   rate (reviewer comments matching a rule already on record), baselined
   by the 2026 audit and re-measured after ~20 post-redesign MRs.
+- **Evidence over recollection.** Mandatory LLM passes produce
+  artifacts deterministic gates can verify (the judgment attestation);
+  a pass that leaves no evidence is treated as a pass that did not
+  happen.
+- **Templates are never discoverable as live artifacts.** Shape
+  templates live under `.github/idd/templates/`, outside every
+  scanned rule directory, test directory, and hook guard — an inert
+  example that a harness can execute, count, or half-parse produces
+  false confidence (observed twice: the live template rule of spec
+  21, and `Configuration not found!` noise from the fixture template
+  in the test path).
+- **Authoritative artifacts are tracked.** Checks, fixtures, hooks
+  wiring, prompts, learned rules, and `sgconfig.yml` are committed,
+  reviewable code; the installer and `/idd-lint` flag any of them
+  that are gitignored or untracked. Session-local state
+  (`.idd-state/`) is the deliberate exception and is never committed.
 
 ## Anchors
 
@@ -231,6 +258,38 @@ priority order:
   surface. `.github/hooks/` is a multi-file namespace, so IDD owns
   `.github/hooks/idd.json` outright — a plain installer write, no
   marker fencing, no merge guidance.
+- **2026-07 — Every rule gets a stable `Rule-Id`; scopes are
+  validated at creation; foreign rules never activate without
+  repository evidence.** Field deployment surfaced three intake
+  defects. (1) Attestations and compiled files need to name rules
+  durably — a required, immutable, kebab-case `Rule-Id` column is
+  added for every rule (`Check-Id` stays mechanical-only). (2)
+  Discovery produced semantic labels (`interfaces`, `callbacks`,
+  `models`) in the `Scope` column, which are not globs and cannot
+  compile — scope validity (`*` or glob patterns containing `/`, `*`,
+  or `.`) is enforced when a rule is created or migrated, not
+  discovered broken later. (3) A brownfield repo received a large
+  imported rule set prescribing nonexistent layers (`objects/`,
+  KOG/`RealmNode`, Flex runtime, PostgreSQL strategy) as `active` —
+  discovered or imported rules always land as `proposed` and require
+  repository evidence plus user approval to activate; `/idd-lint`
+  flags active rules whose scopes or constraints reference paths the
+  repository does not contain.
+- **2026-07 — Hook envelopes follow field-observed harness contracts,
+  not documentation alone.** The first Copilot envelope was built
+  from the hooks reference and drifted from what VS Code actually
+  enforces: event names are PascalCase (`PreToolUse`, `PostToolUse`,
+  `Stop`), entries use `command` + `timeout` (not `bash` +
+  `timeoutSec`), and VS Code reads the deny decision nested under
+  `hookSpecificOutput` while the CLI reads it top-level — so the
+  compiled hooks emit both. Tool coverage includes VS Code's
+  `run_in_terminal` alongside `bash`/`powershell`, and V4A
+  `apply_patch`, whose changed paths are embedded in the tool input
+  as `*** Add|Update|Delete File:` records rather than a path
+  argument. Because the installed hook is copied from the staged
+  template, a template defect regenerates on every bootstrap — both
+  must be fixed together, and live-harness observation outranks the
+  reference docs when they disagree.
 - **2026-07 — Every compiled check ships with a fixture pair; the
   dead check is treated as the primary enforcement failure mode.** A
   check whose pattern is subtly wrong never fires, never errors, and
@@ -279,6 +338,17 @@ priority order:
   locally staged hook templates.
 - `.github/idd/features/22-check-fixtures.md` — the fixture-pair
   requirement and the `ast-grep test` wiring.
+- Upstream patch brief, 2026-07 (field deployment of the enforcement
+  layer): nine confirmed problems, including silent omission of the
+  judgment review, hook-envelope drift against the live VS Code
+  contract, non-glob scopes from discovery, unreconciled foreign
+  rules activated in a brownfield repo, and authoritative artifacts
+  left gitignored — addressed by specs 23–25 and
+  `wiki::judgment-review::summary`.
+- `.github/idd/features/23-rule-ids-and-scope-integrity.md`,
+  `24-judgment-review-attestation.md`,
+  `25-deterministic-gates-and-hook-hardening.md` — the derived
+  execution plan for the patch brief.
 - GitHub Copilot hooks reference (docs.github.com, 2026) — event set,
   payload shapes, decision-control JSON, and the exit-code semantics
   the Copilot envelope is designed around.
