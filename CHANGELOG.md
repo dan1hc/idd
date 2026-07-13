@@ -1,3 +1,18 @@
+# [3.0.0](https://github.com/dan1hc/idd/compare/v2.2.0...v3.0.0) (2026-07-13)
+
+
+* feat!: make judgment review executable and attestable ([197ee93](https://github.com/dan1hc/idd/commit/197ee93eacc291f5e1a199177015623d42ed6c72))
+
+
+### BREAKING CHANGES
+
+* learned.md requires a Rule-Id column (migration
+backfills deterministically); check/check-test shape templates moved
+to .github/idd/templates/; the Copilot hook envelope changed event
+casing and entry fields.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
 # [2.2.0](https://github.com/dan1hc/idd/compare/v2.1.1...v2.2.0) (2026-07-12)
 
 
