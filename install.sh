@@ -223,6 +223,7 @@ download ".github/idd/templates/check.yml" ".github/idd/templates/check.yml"
 download ".github/idd/templates/check-test.yml" ".github/idd/templates/check-test.yml"
 download ".github/idd/templates/claude-settings-hooks.json" ".github/idd/templates/claude-settings-hooks.json"
 download ".github/idd/templates/copilot-hooks.json" ".github/idd/templates/copilot-hooks.json"
+download ".github/idd/templates/reviewer-prompt.md" ".github/idd/templates/reviewer-prompt.md"
 
 # Deterministic judgment gate helper: fingerprints and attestation
 # verification for the commit and completion gates. Never invokes an

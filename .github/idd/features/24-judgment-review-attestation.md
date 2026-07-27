@@ -1,6 +1,16 @@
 # Feature: judgment-review-attestation
 
 > **Status**: `complete`
+>
+> **Review model partially superseded by
+> `26-attestation-v2-citation-gating` and
+> `27-isolated-reviewer-dispatch`** (2026-07): the self-review
+> workflow and schema v1 (`not-applicable`, uncited verdicts) are
+> replaced by context-isolated adversarial reviewers and schema v2
+> with verified citations. AC-3's `not-applicable` grep is historical
+> and no longer passes by design; spec 27 AC-3 asserts the
+> replacement. The fingerprint model, attestation lifecycle, helper,
+> and installer wiring defined here stand unchanged.
 
 This file is the primary execution and maintenance contract for the
 executable, attestable judgment review, per the 2026-07 upstream patch

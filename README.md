@@ -117,10 +117,13 @@ manager:
   (Copilot `applyTo` instructions, nested `CLAUDE.md` sections,
   `.cursor/rules`) so they're injected at edit time — but compilation
   only guides generation. The mandatory in-session review
-  (`/idd-judgment-review`) evaluates the final change set against
-  exactly the rules whose scope matches, per rule with evidence, and
-  writes a session-local attestation bound to fingerprints of the
-  exact change set and rule set. Deterministic commit and completion
+  (`/idd-judgment-review`) dispatches context-isolated **adversarial
+  reviewer subagents** — one per scope group, each seeing only the
+  matched rules and diff slice, never the authoring context — that
+  must return a verdict per rule with a mechanically verified
+  citation into the code, assembled verbatim into a session-local
+  attestation bound to fingerprints of the exact change set and rule
+  set. Deterministic commit and completion
   gates verify that attestation — a missing, failed, or stale review
   blocks, so it cannot be silently skipped. Riding the session's own
   model access, no extra credential; the gates themselves never

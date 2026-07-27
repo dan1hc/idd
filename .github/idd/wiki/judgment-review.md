@@ -151,6 +151,16 @@ repo — and are inert when no changed file matches any judgment scope.
 - **2026-07 — Attestations are session-local and disposable.** The
   attestation is evidence for the current change set, not history;
   it is gitignored, replaced whole on each run, and never committed.
+- **2026-07 — The reviewer model here is partially superseded by
+  `wiki::adversarial-review::summary`.** This entry's workflow had
+  the authoring session review its own diff; continued field
+  deployment showed that closes omission but not hollow execution
+  (the author rubber-stamps itself). The review is now performed by
+  a context-isolated adversarial subagent, and the attestation's
+  review payload moves to schema v2 (per-rule verdicts with
+  mandatory citations, structural completeness asserted by the
+  gate). The fingerprint model, the attestation's session-local
+  lifecycle, and the gates defined here are unchanged.
 
 ## Evidence
 

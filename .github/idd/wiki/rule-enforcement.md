@@ -107,9 +107,12 @@ priority order:
    it runs as `/idd-judgment-review`, writes a fingerprint-bound
    attestation, and deterministic gates verify that attestation at
    commit and completion time — see `wiki::judgment-review::summary`.
-   Target 3 (compilation) is never evidence that this target ran;
-   compilation guides generation, review evaluates the result, and
-   only review may report `pass`.
+   The reviewer is a context-isolated adversarial subagent, never the
+   authoring context, and every verdict carries a citation
+   (`wiki::adversarial-review::summary`). Target 3 (compilation) is
+   never evidence that this target ran; compilation guides
+   generation, review evaluates the result, and only review may
+   report `pass`.
 5. **In-session correction.** Where the harness supports hooks, check
    failures re-enter the same task's context with the rule, rationale,
    and prior citation, and a self-correction attempt is required before

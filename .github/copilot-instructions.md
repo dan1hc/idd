@@ -382,10 +382,14 @@ you look for contradictions, omissions, stale anchors, and low-confidence claims
    `/idd-judgment-review` workflow
    (`.github/prompts/idd-judgment-review.prompt.md`): fingerprint the
    change set, match changed paths against the `Scope` globs of
-   `active` `judgment` rules, review the relevant diff against those
-   rules and nothing else, fix violations, re-run against the new
-   fingerprint, and write the attestation
-   (`.idd-state/judgment-review.json`). This pass is mandatory for
+   `active` `judgment` rules, and dispatch one context-isolated
+   adversarial reviewer subagent per scope group — each receives only
+   the reviewer template, its rule group, and its diff slice, never
+   the implementation context. Assemble the reviewers' verdicts into
+   the attestation (`.idd-state/judgment-review.json`) verbatim —
+   never edit, drop, or downgrade a reviewer's verdict; fix the
+   violations and re-dispatch against the new fingerprint until none
+   remain. This pass is mandatory for
    every code-changing task, not an on-demand command; if the user
    explicitly overrides a rule, record that in the diff description.
    Judgment *compilation* (§7's instruction files) is never evidence

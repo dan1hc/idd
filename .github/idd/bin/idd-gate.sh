@@ -117,24 +117,65 @@ changed_paths() {
 
 # Scope matching uses git's own :(glob) pathspec semantics so the gate
 # and the compiler agree on what a glob means; `*` is repo-wide.
-matched_paths() {
-	local mode="$1" g
-	while IFS= read -r g; do
-		[ -n "$g" ] || continue
-		if [ "$g" = "*" ]; then
-			changed_paths "$mode"
-			continue
-		fi
-		if [ "$mode" = staged ]; then
-			git diff --cached --name-only -- ":(glob)$g" 2>/dev/null
+scope_matches() {
+	local mode="$1" g="$2" hit
+	if [ "$g" = "*" ]; then
+		hit=$(changed_paths "$mode" | head -1)
+	elif [ "$mode" = staged ]; then
+		hit=$(git diff --cached --name-only -- ":(glob)$g" 2>/dev/null | grep -v "^$STATE_DIR/" | head -1)
+	else
+		hit=$({
+			git diff --cached --name-only -- ":(glob)$g"
+			git diff --name-only -- ":(glob)$g"
+			git ls-files --others --exclude-standard -- ":(glob)$g"
+		} 2>/dev/null | grep -v "^$STATE_DIR/" | head -1)
+	fi
+	[ -n "$hit" ]
+}
+
+# The gate computes applicability; the reviewer does not. A rule is
+# applicable when any of its Scope globs matches a changed path.
+applicable_rule_ids() {
+	local mode="$1" id scopes rest g
+	while IFS='|' read -r id scopes rest; do
+		[ -n "$id" ] || continue
+		while IFS= read -r g; do
+			[ -n "$g" ] || continue
+			if scope_matches "$mode" "$g"; then
+				printf '%s\n' "$id"
+				break
+			fi
+		done < <(printf '%s' "$scopes" | tr ',' '\n' | sed 's/`//g; s/^ *//; s/ *$//' | awk 'NF')
+	done < <(rules_rows) | LC_ALL=C sort -u
+}
+
+# Citation verification: path:line quotes must appear in the cited
+# file's current content (substring — the quote is the load-bearing
+# claim, line numbers drift); path:- quotes must appear among the
+# lines the diff removes from that file. A citation that fails here
+# is fabricated.
+verify_citations() {
+	local mode="$1" entry ev path loc quote removed
+	while IFS= read -r entry; do
+		ev=$(printf '%s' "$entry" | jq -r '.evidence')
+		quote=$(printf '%s' "$entry" | jq -r '.quote')
+		path="${ev%:*}"
+		loc="${ev##*:}"
+		if [ "$loc" = "-" ]; then
+			if [ "$mode" = staged ]; then
+				removed=$(git diff --cached -- "$path" 2>/dev/null)
+			else
+				removed=$(git diff HEAD -- "$path" 2>/dev/null)
+			fi
+			if ! printf '%s\n' "$removed" | grep '^-' | grep -v '^---' | cut -c2- | grep -Fq -- "$quote"; then
+				printf '%s: quote not found among lines removed from %s\n' "$(printf '%s' "$entry" | jq -r '.ruleId')" "$path"
+			fi
 		else
-			{
-				git diff --cached --name-only -- ":(glob)$g"
-				git diff --name-only -- ":(glob)$g"
-				git ls-files --others --exclude-standard -- ":(glob)$g"
-			} 2>/dev/null
+			if [ ! -f "$path" ] || ! grep -Fq -- "$quote" "$path"; then
+				printf '%s: quote not found in %s\n' "$(printf '%s' "$entry" | jq -r '.ruleId')" "$path"
+			fi
 		fi
-	done < <(judgment_scopes) | grep -v "^$STATE_DIR/" | LC_ALL=C sort -u
+	done < <(jq -c '.reviews // [] | .[]' "$ATTEST" 2>/dev/null)
 }
 
 fingerprints() {
@@ -143,22 +184,26 @@ fingerprints() {
 }
 
 gate() {
-	local mode="$1" word matched result att_cs att_rules cur_cs cur_rules
+	local mode="$1" word applicable result att_cs att_rules cur_cs cur_rules
+	local version bad_entries violations reviewed missing extra fabricated
 	case "$mode" in
 		staged) word="committing" ;;
 		worktree) word="completing the task" ;;
 		*) echo "usage: idd-gate.sh gate staged|worktree" >&2; exit 2 ;;
 	esac
-	matched=$(matched_paths "$mode" | head -1)
-	[ -n "$matched" ] || exit 0
+	block() { echo "$1 Run /idd-judgment-review before $word." >&2; exit 1; }
+	applicable=$(applicable_rule_ids "$mode")
+	[ -n "$applicable" ] || exit 0
 	if [ ! -f "$ATTEST" ]; then
-		echo "IDD judgment review is missing: changed files match active judgment rules. Run /idd-judgment-review before $word." >&2
-		exit 1
+		block "IDD judgment review is missing: changed files match active judgment rules."
+	fi
+	version=$(jq -r '.version // 0' "$ATTEST" 2>/dev/null)
+	if [ "$version" != "2" ]; then
+		block "IDD non-review detected: attestation is not schema v2 (version: ${version:-unreadable})."
 	fi
 	result=$(jq -r '.result // empty' "$ATTEST" 2>/dev/null)
 	if [ "$result" != "pass" ]; then
-		echo "IDD judgment review did not pass (result: ${result:-unreadable}). Fix the findings and rerun /idd-judgment-review before $word." >&2
-		exit 1
+		block "IDD judgment review did not pass (result: ${result:-unreadable}). Fix the findings and rerun."
 	fi
 	cur_rules=$(rules_fp)
 	att_rules=$(jq -r '.rulesFingerprint // empty' "$ATTEST" 2>/dev/null)
@@ -170,8 +215,33 @@ gate() {
 		att_cs=$(jq -r '.worktreeFingerprint // empty' "$ATTEST" 2>/dev/null)
 	fi
 	if [ "$att_cs" != "$cur_cs" ] || [ "$att_rules" != "$cur_rules" ]; then
-		echo "IDD judgment review is stale: the $mode state or the judgment rules changed after review. Run /idd-judgment-review before $word." >&2
-		exit 1
+		block "IDD judgment review is stale: the $mode state or the judgment rules changed after review."
+	fi
+	# Structural completeness: every entry well-formed, no violation
+	# entry may coexist with result: pass.
+	bad_entries=$(jq -r '[.reviews // [] | .[] | select((.ruleId // "") == "" or ((.verdict != "violation") and (.verdict != "compliant")) or (.evidence // "") == "" or (.quote // "") == "" or (.verdict == "violation" and (.note // "") == ""))] | length' "$ATTEST" 2>/dev/null)
+	if [ "$bad_entries" != "0" ]; then
+		block "IDD non-review detected: $bad_entries review entries lack a verdict, citation, quote, or violation note."
+	fi
+	violations=$(jq -r '[.reviews // [] | .[] | select(.verdict == "violation")] | length' "$ATTEST" 2>/dev/null)
+	if [ "$violations" != "0" ]; then
+		block "IDD attestation inconsistent: result is pass but $violations violation entries are recorded."
+	fi
+	# Coverage: the gate's applicable set and the reviewed set must
+	# agree — >=1 entry per applicable rule, no entry for a
+	# non-applicable rule.
+	reviewed=$(jq -r '.reviews // [] | .[].ruleId' "$ATTEST" 2>/dev/null | LC_ALL=C sort -u)
+	missing=$(comm -23 <(printf '%s\n' "$applicable") <(printf '%s\n' "$reviewed") | awk 'NF' | head -3 | tr '\n' ' ')
+	if [ -n "$missing" ]; then
+		block "IDD non-review detected: applicable judgment rules have no review entry: $missing."
+	fi
+	extra=$(comm -13 <(printf '%s\n' "$applicable") <(printf '%s\n' "$reviewed") | awk 'NF' | head -3 | tr '\n' ' ')
+	if [ -n "$extra" ]; then
+		block "IDD non-review detected: review entries name rules not applicable to this change set: $extra."
+	fi
+	fabricated=$(verify_citations "$mode" | head -3 | tr '\n' '; ')
+	if [ -n "$fabricated" ]; then
+		block "IDD non-review detected: fabricated citations — $fabricated"
 	fi
 	exit 0
 }
