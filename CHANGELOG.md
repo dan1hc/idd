@@ -1,3 +1,18 @@
+# [4.0.0](https://github.com/dan1hc/idd/compare/v3.0.0...v4.0.0) (2026-07-27)
+
+
+* feat!: adversarial context-isolated judgment review with verified citations ([921b4fb](https://github.com/dan1hc/idd/commit/921b4fbb481b694be9189bfda520de8634eefdc3))
+
+
+### BREAKING CHANGES
+
+* the judgment attestation moves to schema v2 — the
+gate rejects v1 attestations, requires a cited verdict per applicable
+rule, and verifies every citation against the code or the removed
+diff lines.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
 # [3.0.0](https://github.com/dan1hc/idd/compare/v2.2.0...v3.0.0) (2026-07-13)
 
 
