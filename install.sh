@@ -1,6 +1,20 @@
 #!/bin/bash
 # IDD Installer — Intent-Driven Development
 # Usage: curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash
+#
+# This installer is NON-ACTIVATING. It stages the inert IDD artifact
+# layer (templates, wiki/feature scaffolds, the operating contract at
+# an inert path, the review policy, the bin/ scripts) plus the
+# on-demand /idd-* prompt files — and nothing that injects
+# instructions, hooks a session, or gates anything. Each contributor
+# activates the integrations they want, independently and behind an
+# explicit confirmation, with:
+#
+#   bash .github/idd/bin/idd-activate.sh enable <integration>
+#
+# A committed IDD configuration is not consent; a fresh checkout with
+# no activation leaves ordinary edits, commits, and completion
+# entirely unblocked by IDD.
 
 set -e
 
@@ -15,28 +29,6 @@ download() {
 	local remote_path="$1"
 	local local_path="$2"
 	curl -fsSL "$BASE_URL/$remote_path" > "$local_path"
-}
-
-# Additive injection: IDD never solely owns a shared file. Content is
-# fenced between idd:begin / idd:end markers; everything outside the
-# fence is preserved byte-for-byte, and re-running replaces only the
-# fenced block.
-inject_idd_block() {
-	local dest="$1"
-	local body="$2"
-	local begin="<!-- idd:begin -->"
-	local end="<!-- idd:end -->"
-	local content pre post
-	if [[ -f "$dest" ]] && grep -qF "$begin" "$dest"; then
-		content="$(cat "$dest")"
-		pre="${content%%"$begin"*}"
-		post="${content##*"$end"}"
-		printf '%s%s\n%s\n%s%s\n' "$pre" "$begin" "$body" "$end" "$post" > "$dest"
-	elif [[ -f "$dest" ]]; then
-		printf '\n%s\n%s\n%s\n' "$begin" "$body" "$end" >> "$dest"
-	else
-		printf '%s\n%s\n%s\n' "$begin" "$body" "$end" > "$dest"
-	fi
 }
 
 write_if_missing() {
@@ -166,10 +158,6 @@ EOF
 - [supporting file]
 EOF
 			;;
-		inventory)
-			echo "Scaffold template 'inventory' is retired; wiki entries replace it." >&2
-			exit 1
-			;;
 		learned)
 			cat > "$dest" <<'EOF'
 # Learned Rules
@@ -199,13 +187,16 @@ EOF
 }
 
 echo ""
-echo -e "${BOLD}Installing IDD${NC}"
+echo -e "${BOLD}Installing IDD (inert artifacts only — nothing activates)${NC}"
 echo ""
 
 mkdir -p .github/idd/features .github/idd/wiki .github/idd/checks .github/idd/check-tests .github/idd/bin .github/prompts
 
-echo -e "  ${BLUE}→${NC} Downloading instructions..."
-download ".github/copilot-instructions.md" ".github/copilot-instructions.md"
+# The operating contract is staged at an inert path. It is injected
+# into a tool's instruction surface (Copilot, Claude, Cursor) only by
+# idd-activate.sh, per contributor, after explicit confirmation.
+echo -e "  ${BLUE}→${NC} Staging operating contract (inert)..."
+download ".github/copilot-instructions.md" ".github/idd/operating-contract.md"
 
 echo -e "  ${BLUE}→${NC} Downloading feature template..."
 download ".github/idd/features/_template.md" ".github/idd/features/_template.md"
@@ -214,9 +205,9 @@ echo -e "  ${BLUE}→${NC} Downloading wiki template..."
 download ".github/idd/wiki/_template.md" ".github/idd/wiki/_template.md"
 
 # All shape and hook templates live under .github/idd/templates/ —
-# never inside a scanned rule/test directory or a hook guard path, so
-# nothing inert is ever counted, executed, or half-parsed. Hook
-# destinations are copied from these, one source of truth per run.
+# never inside a scanned rule/test directory or an active hook path.
+# Hook templates are inert until a contributor runs
+# idd-activate.sh enable claude-hooks / copilot-hooks.
 echo -e "  ${BLUE}→${NC} Downloading templates..."
 mkdir -p .github/idd/templates
 download ".github/idd/templates/check.yml" ".github/idd/templates/check.yml"
@@ -225,14 +216,25 @@ download ".github/idd/templates/claude-settings-hooks.json" ".github/idd/templat
 download ".github/idd/templates/copilot-hooks.json" ".github/idd/templates/copilot-hooks.json"
 download ".github/idd/templates/reviewer-prompt.md" ".github/idd/templates/reviewer-prompt.md"
 
-# Deterministic judgment gate helper: fingerprints and attestation
-# verification for the commit and completion gates. Never invokes an
-# LLM.
-echo -e "  ${BLUE}→${NC} Downloading judgment gate helper..."
-download ".github/idd/bin/idd-gate.sh" ".github/idd/bin/idd-gate.sh"
+# Deterministic review helper (fingerprints, policy plan, advisory
+# verify) and the per-contributor activation script. Neither is wired
+# into anything by installation.
+echo -e "  ${BLUE}→${NC} Downloading IDD scripts..."
+download ".github/idd/bin/idd-review.sh" ".github/idd/bin/idd-review.sh"
+download ".github/idd/bin/idd-activate.sh" ".github/idd/bin/idd-activate.sh"
+chmod +x .github/idd/bin/idd-review.sh .github/idd/bin/idd-activate.sh
 
-# Session-local judgment attestations are evidence for the current
-# change set, not history — never committed.
+# Bounded judgment-review policy: reviewerRuleCap, maxAutomaticRounds,
+# precedence pairs. Committed, reviewable configuration.
+if [[ ! -f ".github/idd/review-policy.yml" ]]; then
+	download ".github/idd/review-policy.yml" ".github/idd/review-policy.yml"
+	echo -e "  ${BLUE}→${NC} Created .github/idd/review-policy.yml"
+else
+	echo -e "  ${BLUE}→${NC} Preserving .github/idd/review-policy.yml"
+fi
+
+# Per-contributor local state (consent record, review receipts) —
+# never committed.
 if [[ -f ".gitignore" ]]; then
 	grep -qxF '.idd-state/' ".gitignore" || printf '\n.idd-state/\n' >> ".gitignore"
 else
@@ -241,6 +243,8 @@ fi
 
 # Wire ast-grep at the committed checks directory. Additive: create a
 # minimal sgconfig.yml when absent, extend ruleDirs when present.
+# Inert by itself — checks run only when a contributor enables hooks
+# or invokes ast-grep.
 if [[ ! -f "sgconfig.yml" ]]; then
 	printf 'ruleDirs:\n  - .github/idd/checks\ntestConfigs:\n  - testDir: .github/idd/check-tests\n' > "sgconfig.yml"
 	echo -e "  ${BLUE}→${NC} Created sgconfig.yml"
@@ -255,7 +259,10 @@ else
 	echo -e "  ${BLUE}→${NC} Preserving sgconfig.yml"
 fi
 
+# On-demand slash commands. Prompt files add commands a contributor
+# can invoke; they inject nothing and run nothing by themselves.
 echo -e "  ${BLUE}→${NC} Downloading slash-command prompts..."
+download ".github/prompts/idd-activate.prompt.md" ".github/prompts/idd-activate.prompt.md"
 download ".github/prompts/idd-discover.prompt.md" ".github/prompts/idd-discover.prompt.md"
 download ".github/prompts/idd-init.prompt.md" ".github/prompts/idd-init.prompt.md"
 download ".github/prompts/idd-feature.prompt.md" ".github/prompts/idd-feature.prompt.md"
@@ -267,55 +274,46 @@ write_if_missing ".github/idd/architecture.md" "architecture"
 write_if_missing ".github/idd/conventions.md" "conventions"
 write_if_missing ".github/idd/learned.md" "learned"
 
-# In-session correction: Claude Code hooks running the committed checks
-# on edit. settings.json is JSON, so marker fencing does not apply —
-# create when absent, otherwise print merge guidance rather than
-# overwrite (additive-installation invariant).
-if [[ ! -f ".claude/settings.json" ]]; then
-	mkdir -p .claude
-	cp ".github/idd/templates/claude-settings-hooks.json" ".claude/settings.json"
-	echo -e "  ${BLUE}→${NC} Created .claude/settings.json (IDD hooks)"
-else
-	echo -e "  ${BLUE}→${NC} .claude/settings.json exists; merge the hooks from .github/idd/templates/claude-settings-hooks.json manually."
-fi
-
-# GitHub Copilot hooks: the same enforcement in Copilot's envelope,
-# read by the Copilot CLI, cloud coding agent, and VS Code agent mode.
-# .github/hooks/ is a multi-file namespace, so IDD owns idd.json
-# outright — a plain write, no fencing, no merge guidance.
-mkdir -p .github/hooks
-cp ".github/idd/templates/copilot-hooks.json" ".github/hooks/idd.json"
-echo -e "  ${BLUE}→${NC} Installed .github/hooks/idd.json (IDD hooks for Copilot)"
-
-echo -e "  ${BLUE}→${NC} Injecting contract into AI tool locations..."
-contract_body="$(cat ".github/copilot-instructions.md")"
-for tool_file in ".cursorrules" "CLAUDE.md"; do
-	# A pre-marker IDD install left a full copy of the contract; swap
-	# it for a fenced block. Any other existing content is kept.
-	if [[ -f "$tool_file" ]] && cmp -s "$tool_file" ".github/copilot-instructions.md"; then
-		rm "$tool_file"
-	fi
-	inject_idd_block "$tool_file" "$contract_body"
-done
-
 # Authoritative IDD artifacts are committed, reviewable code —
-# gitignored enforcement silently disappears for every other clone.
+# gitignored artifacts silently disappear for every other clone.
+# (Per-contributor surfaces created by idd-activate.sh are the
+# deliberate local exception and are not checked here.)
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-	for artifact in .github/copilot-instructions.md .github/idd .github/prompts .github/hooks/idd.json sgconfig.yml .claude/settings.json; do
+	for artifact in .github/idd .github/prompts sgconfig.yml; do
 		if git check-ignore -q "$artifact" 2>/dev/null; then
-			echo -e "  ${BOLD}!${NC} WARNING: $artifact is gitignored — IDD artifacts must be tracked (only .idd-state/ is session-local)."
+			echo -e "  ${BOLD}!${NC} WARNING: $artifact is gitignored — shared IDD artifacts should be tracked (only .idd-state/ and activation surfaces are local)."
 		fi
 	done
 fi
 
+# Upgrades: a pre-opt-in installation left activation surfaces this
+# installer deliberately never touches (gating hooks, the old
+# idd-gate.sh, whole-file or fenced legacy contracts). Detect them and
+# point at the in-session migration — install alone does not migrate.
+if [[ -f ".github/idd/bin/idd-gate.sh" ]] \
+	|| grep -Fq 'idd-gate.sh' ".github/hooks/idd.json" 2>/dev/null \
+	|| grep -Fq 'IDD in-session enforcement' ".claude/settings.json" 2>/dev/null; then
+	echo ""
+	echo -e "  ${BOLD}!${NC} Legacy (pre-opt-in) IDD surfaces detected. Re-running install does NOT remove them —"
+	echo -e "  ${BOLD}!${NC} the old gating hooks and contract stay active until migrated. Run /idd-activate in"
+	echo -e "  ${BOLD}!${NC} your agent (it offers migration), or: bash .github/idd/bin/idd-activate.sh migrate"
+fi
+
 echo ""
-echo -e "${GREEN}✓${NC} IDD installed successfully!"
+echo -e "${GREEN}✓${NC} IDD installed (inert). Nothing is active yet."
 echo ""
-echo 'Open Copilot Chat and invoke one of the IDD slash commands:'
+echo 'This is the only command you run in a terminal. Everything else'
+echo 'happens in-session with your agent, starting with activation:'
+echo ''
+echo '  - /idd-activate         Enable or disable integrations for this clone'
+echo '                          (the agent confirms each one with you, then'
+echo '                          runs the activation script on your behalf).'
+echo ''
+echo 'Then drive the workflow with the other IDD slash commands:'
 echo '  - /idd-init             Bootstrap a new repository.'
 echo '  - /idd-discover         Seed artifacts from an existing repository.'
 echo '  - /idd-feature          Derive a bounded feature spec from a wiki entry.'
-echo '  - /idd-judgment-review  Review the change set against judgment rules and attest.'
+echo '  - /idd-judgment-review  Manually review the change set against judgment rules.'
 echo '  - /idd-lint             Sweep for drift, duplicates, orphans, and broken anchors.'
 echo ""
 echo -e "Docs: ${BLUE}https://dan1hc.github.io/idd${NC}"

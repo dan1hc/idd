@@ -1,6 +1,14 @@
 # Feature: isolated-reviewer-dispatch
 
 > **Status**: `complete`
+>
+> **Orchestration superseded by `29-manual-bounded-judgment-review`**
+> (2026-08): dispatch now follows the policy-selected plan
+> (`reviewerRuleCap` packs, unit fingerprints, receipt retention,
+> `maxAutomaticRounds` with escalation) instead of one reviewer per
+> raw scope group with wholesale re-dispatch, and the workflow is
+> manual-only. The reviewer contract — isolation, adversarial
+> charge, verified citations, verbatim assembly — stands unchanged.
 
 This file is the primary execution and maintenance contract for
 converting the judgment review from self-review to context-isolated

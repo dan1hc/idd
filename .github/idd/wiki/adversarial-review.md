@@ -13,10 +13,14 @@ review, because the gate verifies fingerprints and the overall
 result, never the review's content. This entry defines the fix: the
 reviewer becomes a **separate, context-isolated, adversarial subagent
 invocation**, every verdict must carry a **citation into the actual
-code**, and `idd-gate.sh` asserts **structural completeness** —
-every applicable rule reviewed, every review evidenced. This does not
-make the reviewer infallible. It makes rubber-stamping *expensive*,
-which is the achievable goal.
+code**, and the deterministic helper asserts **structural
+completeness** — every applicable rule reviewed, every review
+evidenced. This does not make the reviewer infallible. It makes
+rubber-stamping *expensive*, which is the achievable goal. (2026-08:
+these checks now run as the advisory `idd-review.sh verify` report,
+and review initiation, fan-out, and rounds are bounded by
+`wiki::bounded-review-orchestration::summary` — the isolation and
+citation mechanics here are unchanged.)
 
 ## Mental Model
 
@@ -129,11 +133,12 @@ Citation forms — two, both deterministic:
   hunk, and is verified against the removed side of the diff rather
   than the file.
 
-### Structural completeness gating
+### Structural completeness verification
 
-`idd-gate.sh` is extended so a content-free attestation is
-mechanically detectable as a non-review, and treated exactly like a
-missing one:
+The deterministic helper (now `idd-review.sh verify`, on request —
+no longer a blocking gate) makes a content-free attestation
+mechanically detectable as a non-review, and reports it exactly like
+a missing one:
 
 - The gate **recomputes the applicable rule-id set itself** — it
   already matches changed paths against `Scope` globs
@@ -148,12 +153,12 @@ missing one:
   advisory since lines drift within a hunk); for `path:-` evidence
   the quote must appear among the lines the diff removes from that
   file. A citation that fails verification is a fabricated citation,
-  and the attestation blocks as a non-review.
+  and the attestation is reported as a non-review.
 - An empty review list, or entries without verifiable citations,
-  blocks with "non-review detected", not with "pass".
+  reports "non-review detected", never "pass".
 - These checks are pure structure and string lookup over
   deterministic inputs — no LLM in the gate, same as every other
-  gate check (`wiki::judgment-review::the-gates`).
+  gate check (`wiki::judgment-review::verification-the-retired-gates`).
 
 What the gate deliberately does **not** check: whether the verdict
 is *semantically right* — whether the cited, verified, real code
@@ -168,14 +173,15 @@ matched rules), reviewer identity ≠ author context. Both target
 harnesses can dispatch subagents, so subagent dispatch is the
 sanctioned mechanism in both.
 
-- **Sharding: one reviewer per scope group.** Reviewers are dispatched
-  per distinct `Scope` group — the same grouping §7 already uses for
-  compiled instruction files — and each receives only that group's
-  rules plus the diff restricted to that group's matching paths.
-  Smaller context per reviewer, tighter isolation, and the
-  invocations run in parallel. A single monolithic reviewer dilutes
-  attention on large diffs, which is a generation-time failure mode
-  this layer exists to escape.
+- **Sharding: policy-planned rule packs.** Reviewers are dispatched
+  per review unit of the policy-selected plan — scope groups split
+  into packs of at most `reviewerRuleCap` rules
+  (`wiki::bounded-review-orchestration::the-standard-plan`) — and
+  each receives only its pack's rules plus the diff restricted to
+  its matching paths. Smaller context per reviewer, tighter
+  isolation, parallel invocations, and bounded fan-out. A single
+  monolithic reviewer dilutes attention on large diffs, which is a
+  generation-time failure mode this layer exists to escape.
 - **Claude Code** — dispatch each reviewer as a subagent (Task tool)
   whose prompt is composed from the canonical reviewer template plus
   its rule group and diff slice; the subagent returns the `reviews`
@@ -186,13 +192,14 @@ sanctioned mechanism in both.
   reviewer prompt — weaker, but preserving the constant: the reviewer
   never sees the implementation context.
 - **The authoring session never edits verdicts.** It assembles the
-  reviewers' raw JSON into the attestation (fingerprints still come
-  from `idd-gate.sh`), fixes the violations found, and re-dispatches
-  review against the new fingerprint, per the existing rerun loop
-  (`wiki::judgment-review::the-workflow`). Its only permitted
-  responses to a verdict are fixing code or asking the user to
-  override a rule — never rewording, dropping, or downgrading an
-  entry.
+  reviewers' raw JSON into the receipt (fingerprints still come
+  from `idd-review.sh`), fixes the violations found, and runs the
+  bounded delta pass — re-dispatching only units whose fingerprint
+  changed, stopping after `maxAutomaticRounds` and escalating what
+  remains (`wiki::bounded-review-orchestration::rounds-receipts-and-escalation`).
+  Its only permitted responses to a verdict are fixing code or
+  asking the user to override a rule — never rewording, dropping, or
+  downgrading an entry.
 
 ## Anchors
 
@@ -200,8 +207,10 @@ sanctioned mechanism in both.
   this entry extends
 - `wiki::judgment-review::mental-model` — layer 1 (omission), closed
   before this entry
-- `code::.github/idd/bin/idd-gate.sh` — gains the structural
-  completeness assertions
+- `code::.github/idd/bin/idd-review.sh` — carries the structural
+  completeness assertions (advisory `verify`)
+- `wiki::bounded-review-orchestration::summary` — manual initiation,
+  pack caps, delta rounds, and escalation bounding this layer
 - `code::.github/prompts/idd-judgment-review.prompt.md` — the
   orchestrator: dispatch, verbatim assembly, rerun loop
 - `code::.github/idd/templates/reviewer-prompt.md` — the canonical
@@ -214,6 +223,13 @@ sanctioned mechanism in both.
 
 ## Decisions
 
+- **2026-08 — Isolation and citations survive; mandate and gates do
+  not.** The reviewer contract (context-isolated, tool-less,
+  adversarial, cited, verbatim) is retained unchanged. What changes:
+  the review runs only on explicit request, structural and citation
+  verification moves to the advisory `idd-review.sh verify`, fan-out
+  follows the capped policy plan, and repair rounds are bounded with
+  escalation — see `wiki::bounded-review-orchestration::decisions`.
 - **2026-07 — The reviewer is never the author.** Same-context
   self-review was observed producing weak adherence in the field even
   with attestation gating: motivated reasoning and justification

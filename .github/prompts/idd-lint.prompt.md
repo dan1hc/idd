@@ -13,7 +13,9 @@ performing a repo-wide reconciliation.
 
 Sweep these artifacts:
 
-- `.github/copilot-instructions.md`
+- The operating contract (`.github/idd/operating-contract.md` where
+  staged by the installer, or `.github/copilot-instructions.md` where
+  the repo owner committed it)
 - `.github/idd/architecture.md`
 - `.github/idd/conventions.md`
 - `.github/idd/learned.md`
@@ -50,12 +52,16 @@ For each, produce findings, not file mutations:
      it. Flag `active` rules whose scopes or constraints reference
      paths, layers, or dependencies this repository does not contain
      (unreconciled foreign rules).
-   - No authoritative artifact is gitignored or untracked: run
-     `git check-ignore` over `.github/copilot-instructions.md`,
-     `.github/idd/`, `.github/prompts/`, `.github/hooks/idd.json`,
-     `sgconfig.yml`, and `.claude/settings.json`, and flag any hit.
-     Conversely, flag a committed `.idd-state/` — attestations are
-     session-local and must never be committed.
+   - No authoritative shared artifact is gitignored or untracked:
+     run `git check-ignore` over `.github/idd/`, `.github/prompts/`,
+     and `sgconfig.yml`, and flag any hit. Per-contributor files are
+     the deliberate exception and are **not** findings when local or
+     untracked: `.idd-state/` (consent, review receipts) and the
+     activation surfaces `idd-activate.sh` creates
+     (`.claude/settings.local.json`, `.github/hooks/idd.json`,
+     fenced instruction blocks). Conversely, flag a committed
+     `.idd-state/` — receipts and consent are per-clone and must
+     never be committed.
    - Every `mechanical` rule with a check-id maps to a live check —
      either a `.github/idd/checks/<check-id>.yml` file or, for
      `linter:<rule-code>` entries, the code selected in the repo's
@@ -82,7 +88,7 @@ For each, produce findings, not file mutations:
    These are deterministic comparisons — file reads and glob matching,
    no model judgment needed to detect drift, only to propose repairs.
 8. **Lifecycle proposals.** Propose promotions of `mechanical` rules to
-   `enforced` where the check is committed and the gates are wired
+   `enforced` where the check is committed and its fixture pair passes
    (promotion drops the rule from compiled prose — the pruning
    mechanism), and flag rules the code no longer exercises as
    `deprecated` candidates.

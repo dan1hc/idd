@@ -1,6 +1,14 @@
 # Feature: attestation-v2-citation-gating
 
 > **Status**: `complete`
+>
+> **Partially superseded by `29-manual-bounded-judgment-review`**
+> (2026-08): the schema moves to v3 (per-unit receipts with
+> `unitFingerprint`, `escalations`, `result: escalated`) and the
+> blocking gate becomes the advisory `idd-review.sh verify`. The
+> citation-verification and structural-completeness logic defined
+> here survives inside `verify` unchanged in spirit; gate-side ACs
+> are historical and no longer pass by design.
 
 This file is the primary execution and maintenance contract for
 attestation schema v2 and its deterministic verification in
@@ -87,7 +95,7 @@ encoded at implementation time as specified.
 
 - All checks are structure and string lookup over deterministic
   inputs — no LLM in the gate
-  (`wiki::judgment-review::the-gates`).
+  (`wiki::judgment-review::verification-the-retired-gates`).
 - Quote matching is exact substring of raw content: the quote is the
   load-bearing claim; line numbers drift within hunks and are
   advisory (`wiki::adversarial-review::decisions`).

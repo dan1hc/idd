@@ -6,6 +6,38 @@ Authoritative inputs: this file and the Markdown files under `.github/idd/`.
 
 ---
 
+## Activation
+
+IDD is a contributor tool, never a repository requirement. It binds
+only contributors who opted in: consent is recorded locally in
+`.idd-state/integrations.json` by
+`.github/idd/bin/idd-activate.sh`, per integration, behind explicit
+confirmation. A committed IDD configuration — this file included —
+is never consent for every contributor.
+
+If this contract is in your context but the current clone has no
+local activation record, treat it as **inert reference**: IDD may
+never block, gate, or delay edits, commits, completion, or CI on
+any IDD requirement; never auto-run an IDD workflow; offer IDD
+commands and guidance only when the user asks. Each integration (instruction
+injection and hooks, per tool) is enabled and disabled independently
+by the contributor, and hooks, when enabled, enforce deterministic
+mechanical checks only — no hook ever starts a judgment review or
+requires a review receipt.
+
+Activation itself happens in-session: the contributor invokes
+`/idd-activate` (or asks directly), you confirm each integration
+with them in-chat, and you run
+`bash .github/idd/bin/idd-activate.sh enable <integration> --yes`
+on their behalf — `--yes` records that the confirmation already
+happened in this conversation; it never substitutes for it. The
+contributor is never required to run a shell script themselves:
+`install.sh` is the only terminal step IDD asks of anyone, and every
+script under `.github/idd/bin/` is an implementation detail the
+agent invokes.
+
+---
+
 ## §0 Artifact Set
 
 These are the authoritative IDD files:
@@ -21,8 +53,15 @@ These are the authoritative IDD files:
 - `.github/idd/checks/*.yml`
 - `.github/idd/check-tests/*-test.yml`
 - `.github/idd/templates/*` (shape and hook templates — never inside
-  scanned or executed paths)
-- `.github/idd/bin/idd-gate.sh`
+  scanned or executed paths; hook templates are inert until a
+  contributor enables them)
+- `.github/idd/review-policy.yml`
+- `.github/idd/bin/idd-review.sh`
+- `.github/idd/bin/idd-activate.sh`
+- `.github/idd/operating-contract.md` (downstream installs: the
+  staged, inert copy of this contract that `idd-activate.sh` injects
+  on request)
+- `.github/prompts/idd-activate.prompt.md`
 - `.github/prompts/idd-discover.prompt.md`
 - `.github/prompts/idd-init.prompt.md`
 - `.github/prompts/idd-feature.prompt.md`
@@ -31,8 +70,12 @@ These are the authoritative IDD files:
 
 All of these are committed, reviewable code — none may be gitignored
 or left untracked (the installer and `/idd-lint` flag violations).
-Session-local state under `.idd-state/` is the deliberate exception:
-gitignored, never committed.
+Per-contributor files are the deliberate exception and are local by
+design: `.idd-state/` (consent record, review receipts) and the
+activation surfaces `idd-activate.sh` creates
+(`.claude/settings.local.json`, `.github/hooks/idd.json`, fenced
+instruction blocks) — these are never required to be committed and
+never treated as missing artifacts.
 
 If one of the top-level Markdown artifacts (`architecture.md`,
 `conventions.md`, `learned.md`) is missing, recreate it with the standard
@@ -156,18 +199,21 @@ raise the mismatch to the user instead of quietly diverging.
 
 ### In-Session Mechanical Checks
 
-Where the harness supports hooks — Claude Code via
-`.claude/settings.json`, GitHub Copilot (CLI, cloud coding agent, and
-VS Code agent mode) via `.github/hooks/idd.json` — the committed
-checks in `.github/idd/checks/` run automatically on edit, and again
-as a blocking commit gate when the session runs `git commit`.
+Where the contributor has enabled hooks — Claude Code via
+`idd-activate.sh enable claude-hooks`
+(`.claude/settings.local.json`), GitHub Copilot (CLI, cloud coding
+agent, and VS Code agent mode) via `enable copilot-hooks`
+(`.github/hooks/idd.json`) — the committed checks in
+`.github/idd/checks/` run automatically on edit, and again when the
+session runs `git commit`. Hooks enforce deterministic checks only.
 When a mechanical check fails in-session, make a self-correction
 attempt — fix the violation, guided by the rule's constraint and
 rationale in the check's message — before the diff is proposed
-externally. In harnesses without hook support, run the same checks
-yourself (`ast-grep scan --config sgconfig.yml` over the files you
-changed) before proposing a diff; there is no external backstop, by
-decision.
+externally. Without enabled hooks, run the same checks yourself
+(`ast-grep scan --config sgconfig.yml` over the files you changed)
+before proposing a diff — that is guidance for producing a clean
+diff, not a gate: IDD blocks nothing for a contributor who has not
+opted in.
 
 ### Write-Back Protocol
 
@@ -199,7 +245,7 @@ Rules:
 Rule schema (the `Rules` table columns):
 
 - `Rule-Id` — required, stable, unique, immutable, lowercase kebab-case
-  identifier (`phoenix-thin-callbacks`). Attestations,
+  identifier (`phoenix-thin-callbacks`). Review receipts,
   compiled instruction files, and lint findings name rules by
   `Rule-Id` — never by row text or position. Renaming is a
   deprecate-and-recreate operation.
@@ -378,31 +424,28 @@ you look for contradictions, omissions, stale anchors, and low-confidence claims
    is exhaustive.
 7. Work directly with repository files and artifact templates. Do not assume a
    hidden backstop exists.
-8. Run the in-session judgment review by executing the
-   `/idd-judgment-review` workflow
-   (`.github/prompts/idd-judgment-review.prompt.md`): fingerprint the
-   change set, match changed paths against the `Scope` globs of
-   `active` `judgment` rules, and dispatch one context-isolated
-   adversarial reviewer subagent per scope group — each receives only
-   the reviewer template, its rule group, and its diff slice, never
-   the implementation context. Assemble the reviewers' verdicts into
-   the attestation (`.idd-state/judgment-review.json`) verbatim —
-   never edit, drop, or downgrade a reviewer's verdict; fix the
-   violations and re-dispatch against the new fingerprint until none
-   remain. This pass is mandatory for
-   every code-changing task, not an on-demand command; if the user
-   explicitly overrides a rule, record that in the diff description.
-   Judgment *compilation* (§7's instruction files) is never evidence
-   this review ran — compilation reports `current`/`stale`/`missing`,
-   review reports `pass`/`fail`/`missing`/`stale`, and only the
-   review may report `pass`. Where the harness runs hooks, the commit
-   and completion gates verify the attestation deterministically; a
-   missing or stale attestation blocks. Never state that IDD
-   validation is complete without a current passing attestation for
-   the exact state you are proposing — in harnesses without hooks
-   this is the unhooked backstop: run the workflow and check
-   `bash .github/idd/bin/idd-gate.sh gate worktree` yourself before
-   declaring completion.
+8. If the task changed source code and `active` `judgment` rules in
+   `learned.md` match the changed paths, **recommend** that the user
+   run `/idd-judgment-review`
+   (`.github/prompts/idd-judgment-review.prompt.md`) — and leave the
+   decision to them. The judgment review is manual-only and
+   advisory: it starts only from an explicit user request, no hook
+   or gate triggers it, and a missing, stale, or failing receipt
+   never blocks a commit, completion, or CI. When the user requests
+   it, the workflow dispatches tool-less, context-isolated
+   adversarial reviewers over the policy-selected plan — bounded by
+   `review-policy.yml` (`reviewerRuleCap`, `maxAutomaticRounds`) —
+   assembles their verdicts verbatim (never edit, drop, or downgrade
+   a reviewer's verdict), retains receipts for unchanged units, and
+   escalates findings that survive the delta round instead of
+   looping. If the user explicitly overrides a rule, record that in
+   the diff description. Judgment *compilation* (§7's instruction
+   files) is never evidence a review ran — compilation reports
+   `current`/`stale`/`missing`, review reports
+   `pass`/`fail`/`escalated`, and only the review may report `pass`.
+   Never claim a judgment review ran without a receipt for the exact
+   state you are proposing; `bash .github/idd/bin/idd-review.sh
+   verify` reports receipt status on request, advisorily.
 
 If a file is stale, fix it in the same task rather than leaving drift behind.
 
@@ -415,6 +458,11 @@ If a file is stale, fix it in the same task rather than leaving drift behind.
 - Do not execute untrusted project code by default.
 - Do not handle raw secrets or credentials.
 - Express confidence and uncertainty explicitly when the repository evidence is incomplete.
-- Do not run IDD slash commands (`/idd-discover`, `/idd-init`,
-  `/idd-feature`, `/idd-lint`) automatically. They are user-initiated
-  only; their procedures live under `.github/prompts/`.
+- Do not run IDD slash commands (`/idd-activate`, `/idd-discover`,
+  `/idd-init`, `/idd-feature`, `/idd-judgment-review`, `/idd-lint`)
+  automatically. They are user-initiated only; their procedures live
+  under `.github/prompts/`.
+- Honor the Activation section: without a local activation record,
+  IDD never blocks or gates anything, and enforcement surfaces are
+  created, modified, or activated only through
+  `idd-activate.sh` with the contributor's explicit confirmation.

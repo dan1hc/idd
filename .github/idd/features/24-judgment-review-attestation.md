@@ -11,6 +11,13 @@
 > and no longer passes by design; spec 27 AC-3 asserts the
 > replacement. The fingerprint model, attestation lifecycle, helper,
 > and installer wiring defined here stand unchanged.
+>
+> **Gates superseded by `29-manual-bounded-judgment-review`**
+> (2026-08): the blocking commit and completion gates are removed —
+> the review is manual-only and advisory, the helper is renamed
+> `idd-review.sh`, and verification runs as the on-request `verify`
+> report (receipt schema v3). The fingerprint model and the
+> session-local receipt lifecycle survive.
 
 This file is the primary execution and maintenance contract for the
 executable, attestable judgment review, per the 2026-07 upstream patch

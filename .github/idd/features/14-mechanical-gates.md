@@ -7,6 +7,11 @@
 > enforcement runs entirely in-session (edit hooks + the in-session
 > commit gate). ACs below are historical; their Verify commands no
 > longer pass by design.
+>
+> **Amended by `28-contributor-opt-in`** (2026-08): the in-session
+> hooks (edit checks and the commit-time check run) exist only for
+> contributors who enabled them via `idd-activate.sh`, and enforce
+> deterministic checks only.
 
 This file is the primary execution and maintenance contract for the
 blocking mechanical gates (pre-commit and CI).

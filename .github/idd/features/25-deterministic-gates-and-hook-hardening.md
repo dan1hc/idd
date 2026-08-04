@@ -1,6 +1,16 @@
 # Feature: deterministic-gates-and-hook-hardening
 
 > **Status**: `complete`
+>
+> **Gates superseded by `28-contributor-opt-in` and
+> `29-manual-bounded-judgment-review`** (2026-08): the attestation
+> commit gate and the `Stop` completion gate are removed from both
+> hook envelopes, hooks are per-contributor opt-in and carry
+> deterministic mechanical checks only, and attestation verification
+> survives as the advisory `idd-review.sh verify`. Gate-related ACs
+> below are historical; their Verify commands no longer pass by
+> design. The hook-envelope hardening (PascalCase events,
+> `command`/`timeout`, dual deny emission) stands unchanged.
 
 This file is the primary execution and maintenance contract for the
 attestation gates and the hook/bootstrap hardening, per the 2026-07
@@ -68,7 +78,7 @@ spec-authoring time (Red confirmed).
 ### Constraints
 
 - Gates are deterministic: git, hashing, jq — no LLM in any hook
-  (`wiki::judgment-review::the-gates`).
+  (`wiki::judgment-review::verification-the-retired-gates`).
 - Scope matching uses git `:(glob)` pathspecs so gates and compiler
   agree on glob semantics; `Scope: *` is special-cased as
   always-match.
@@ -126,10 +136,10 @@ spec-authoring time (Red confirmed).
 | `code::.github/idd/templates/copilot-hooks.json` | template | Hardened Copilot envelope with both gates. |
 | `code::.github/idd/templates/check.yml` | template | Relocated check shape (was `checks/_template.yml`). |
 | `code::.github/idd/templates/check-test.yml` | template | Relocated fixture shape (was `check-tests/_template-test.yml`). |
-| `wiki::judgment-review::the-gates` | wiki | Gate semantics. |
+| `wiki::judgment-review::verification-the-retired-gates` | wiki | Gate semantics. |
 
 ## Wiki Anchors
 
-- `wiki::judgment-review::the-gates`
+- `wiki::judgment-review::verification-the-retired-gates`
 - `wiki::rule-enforcement::invariants`
 - `wiki::rule-enforcement::decisions`

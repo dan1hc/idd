@@ -183,17 +183,36 @@
     <section>
       <h2>Install</h2>
       <pre><code>curl -fsSL https://raw.githubusercontent.com/dan1hc/idd/main/install.sh | bash</code></pre>
+      <p class="lede" style="margin-top:16px; font-size:0.98rem;">
+        This is the only command you ever run in a terminal. The
+        installer is non-activating: it stages the inert IDD artifact
+        layer (artifact scaffolds, templates, scripts, the review
+        policy, ast-grep wiring via <code>sgconfig.yml</code>, a
+        <code>.gitignore</code> entry for <code>.idd-state/</code>)
+        and the on-demand slash commands — nothing that injects
+        instructions, hooks a session, or gates anything.
+        Everything after it happens in-session — open your agent and
+        run <code>/idd-activate</code> to opt in per integration
+        (explicitly confirmed in-chat, recorded locally, reversible;
+        the agent runs <code>.github/idd/bin/idd-activate.sh</code>
+        on your behalf). Upgrading from an older IDD? Re-installing
+        never removes the legacy always-on hooks and contract —
+        <code>/idd-activate</code> detects them and offers migration
+        (<code>idd-activate.sh migrate</code>) before you re-enable
+        anything.
+      </p>
     </section>
 
     <section>
       <h2>Flow</h2>
       <ol class="steps">
-        <li><div><strong>Install</strong><p>Bootstraps the operating contract and the IDD artifact set.</p></div></li>
+        <li><div><strong>Install</strong><p>Stages the operating contract and the IDD artifact set — inert until you activate.</p></div></li>
+        <li><div><strong>Activate</strong><p>Run <code>/idd-activate</code> in your agent (Copilot discovers it from <code>.github/prompts/</code>; in a harness without prompt-file discovery, ask the agent to follow <code>.github/prompts/idd-activate.prompt.md</code>). It confirms each integration with you in-chat and enables only what you choose, independently, for your clone only; a committed IDD configuration is never consent for other contributors.</p></div></li>
         <li><div><strong>Bootstrap</strong><p>Run <code>/idd-init</code> for a new repo, or <code>/idd-discover</code> against an existing one. Copilot seeds architecture, conventions, and the first wiki entries.</p></div></li>
         <li><div><strong>Think in the wiki</strong><p>You and Copilot flesh out a concept, subsystem, or feature as one or more wiki entries. This is the design surface. No code yet.</p></div></li>
         <li><div><strong>Derive feature specs</strong><p>Run <code>/idd-feature</code>. The wiki entry holds the concept; each feature spec is one bounded change to it. A wiki entry can spawn many feature specs over time — initial build, additions, refactors.</p></div></li>
         <li><div><strong>Execute</strong><p>Copilot works through specs sequentially under Red / Green TDD, then writes back so prose follows source.</p></div></li>
-        <li><div><strong>Enforce</strong><p>Approving a learned rule compiles it in the same session: mechanical rules become linter config or committed ast-grep checks that session hooks run on every edit and as a blocking gate on <code>git commit</code>; judgment rules become path-scoped instruction files plus the mandatory <code>/idd-judgment-review</code> — context-isolated adversarial reviewer subagents that never see the authoring context and must cite the code for every verdict, writing a fingerprint-bound attestation whose structure and citations the commit and completion gates verify deterministically, so it can be neither skipped nor rubber-stamped. Everything runs in-session — no CI, no git hooks. Enforced rules drop out of prose, keeping the rule set small.</p></div></li>
+        <li><div><strong>Enforce</strong><p>Approving a learned rule compiles it in the same session: mechanical rules become linter config or committed ast-grep checks that opt-in session hooks run on every edit and again on <code>git commit</code> — deterministic checks only; judgment rules become path-scoped instruction files plus the on-request <code>/idd-judgment-review</code> — tool-less, context-isolated adversarial reviewer subagents (at most six rules each, per the committed review policy) that never see the authoring context and must cite the code for every verdict, writing fingerprint-bound receipts. Repairs re-review only changed units, orchestration stops after one delta pass and escalates the rest, and the review is advisory — no hook triggers it and a missing receipt blocks nothing. Everything runs in-session — no CI, no git hooks. Enforced rules drop out of prose, keeping the rule set small.</p></div></li>
         <li><div><strong>Review</strong><p>Run <code>/idd-lint</code> on demand to sweep for drift, duplicates, orphans, broken anchors, and enforcement sync (rule ↔ check ↔ compiled artifact).</p></div></li>
       </ol>
     </section>
@@ -202,48 +221,61 @@
       <h2>Enforcement setup</h2>
       <p class="lede" style="margin-bottom:16px; font-size:0.98rem;">
         Enforcement runs entirely in-session, so there are no repo
-        secrets and no branch-protection settings. The installer wires
-        the hooks for both harnesses — Claude Code via
-        <code>.claude/settings.json</code>, GitHub Copilot (CLI, cloud
-        coding agent, VS Code agent mode) via
-        <code>.github/hooks/idd.json</code>. The hooks need two local
-        tools; without them they degrade to silent no-ops:
+        secrets and no branch-protection settings — and it is opt-in:
+        hooks exist only after you enable them via
+        <code>/idd-activate</code> — Claude Code's
+        <code>claude-hooks</code>
+        (<code>.claude/settings.local.json</code>), GitHub Copilot's
+        (CLI, cloud coding agent, VS Code agent mode)
+        <code>copilot-hooks</code>
+        (<code>.github/hooks/idd.json</code>) — the agent runs
+        <code>idd-activate.sh</code> for you. Enabled hooks enforce
+        deterministic checks only and need two local tools; without
+        them they degrade to silent no-ops:
       </p>
       <ol class="steps">
-        <li><div><strong>Install ast-grep</strong><p><code>brew install ast-grep</code> (or <code>npm i -g @ast-grep/cli</code>). Runs the committed mechanical checks on every edit and as the blocking in-session commit gate.</p></div></li>
-        <li><div><strong>Install jq</strong><p><code>brew install jq</code>. The hooks use it to read the harness event payload and verify the judgment attestation.</p></div></li>
+        <li><div><strong>Install ast-grep</strong><p><code>brew install ast-grep</code> (or <code>npm i -g @ast-grep/cli</code>). Runs the committed mechanical checks on every edit and again on <code>git commit</code>.</p></div></li>
+        <li><div><strong>Install jq</strong><p><code>brew install jq</code>. The hooks use it to read the harness event payload; <code>idd-review.sh</code> uses it for plans and receipts.</p></div></li>
       </ol>
       <p class="lede" style="margin-top:16px; font-size:0.98rem;">
-        The judgment gates are deterministic: they verify the
-        session-local attestation written by
+        The judgment review is manual and advisory: no hook triggers
+        it, and a missing, stale, or failing receipt blocks nothing.
+        <code>idd-review.sh verify</code> deterministically checks the
+        session-local receipts written by
         <code>/idd-judgment-review</code> (in <code>.idd-state/</code>,
         gitignored) against fingerprints of the exact change set and
-        rule set — no LLM ever runs inside a hook.
+        rule set — on request, and no LLM ever runs inside a hook.
       </p>
     </section>
 
     <section>
       <h2>Footprint</h2>
 <div class="tree"><span class="key">.github/</span>
-├── copilot-instructions.md
-├── hooks/
-│   └── idd.json
 ├── prompts/
+│   ├── idd-activate.prompt.md
 │   ├── idd-discover.prompt.md
 │   ├── idd-init.prompt.md
 │   ├── idd-feature.prompt.md
 │   ├── idd-judgment-review.prompt.md
 │   └── idd-lint.prompt.md
 └── idd/
+    ├── operating-contract.md
     ├── architecture.md
     ├── conventions.md
     ├── learned.md
+    ├── review-policy.yml
     ├── bin/
     ├── checks/
     ├── check-tests/
     ├── templates/
     ├── wiki/
-    └── features/</div>
+    └── features/
+<span class="key">sgconfig.yml</span>  (ast-grep wiring — created or extended)
+
+<span class="key">opt-in, per contributor (idd-activate.sh):</span>
+.github/copilot-instructions.md · CLAUDE.md · .cursorrules
+.claude/settings.local.json · .github/hooks/idd.json
+.idd-state/  (consent + receipts, gitignored)</div>
     </section>
 
     <footer>

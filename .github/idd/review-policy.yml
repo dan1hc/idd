@@ -1,0 +1,25 @@
+# IDD judgment-review policy — the bounded-orchestration controls read
+# by .github/idd/bin/idd-review.sh (plan derivation) and by the
+# /idd-judgment-review orchestrator. Committed, reviewable
+# configuration: changing a bound is a diff, never an in-session
+# judgment call. See wiki::bounded-review-orchestration::summary.
+version: 1
+
+# Maximum rules per reviewer pack. A scope group matching more rules
+# is split into multiple fingerprinted units; fan-out follows this
+# plan, never raw scope multiplicity.
+reviewerRuleCap: 6
+
+# Automatic review rounds per requested review: the initial pass plus
+# one delta pass. Findings still open after the delta pass are
+# escalated to the contributor, never consumed by further automatic
+# rounds.
+maxAutomaticRounds: 2
+
+# Explicit precedence pairs — the only sanctioned way to resolve a
+# conflict between two rules' findings. Absent a pair, both findings
+# stand verbatim and the conflict is escalated.
+# precedence:
+#   - prefer: <rule-id>
+#     over: <rule-id>
+precedence: []

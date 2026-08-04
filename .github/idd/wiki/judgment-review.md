@@ -11,11 +11,14 @@ context while the agent edits — it guides generation and is never
 evidence that review occurred. Review evaluates the final change set
 against every matching active judgment rule and produces per-rule
 results. This entry defines the review workflow
-(`/idd-judgment-review`), the session-local attestation that proves a
+(`/idd-judgment-review`), the session-local receipt that proves a
 review happened against the exact current state, and the
-deterministic gates that block completion and commit when the
-attestation is missing, failed, or stale. Hooks stay deterministic:
-they verify an attestation, they never invoke an LLM.
+deterministic verification of that receipt. Since the 2026-08
+overhaul the review is **manual and advisory**: it starts only from
+an explicit request, verification runs on request
+(`idd-review.sh verify`), and no hook or gate blocks a commit or
+completion on a missing, stale, or failing receipt
+(`wiki::bounded-review-orchestration::summary`).
 
 ## Mental Model
 
@@ -33,10 +36,11 @@ procedural obligation into an artifact plus a deterministic check:
    (`pass` / `fail` / `not-applicable`, each with evidence) tied to
    those fingerprints. It is session-local, gitignored, never
    committed, and replaced whole on each run.
-3. **The gates** verify the attestation exists, passed, and matches
-   the current fingerprints — pure git + hashing, no LLM. The commit
-   gate validates the staged fingerprint; the completion gate
-   validates the worktree fingerprint.
+3. **Verification** confirms the attestation exists, passed, and
+   matches the current fingerprints — pure git + hashing, no LLM.
+   Originally this ran as blocking commit and completion gates;
+   it now runs as the on-request `idd-review.sh verify` report
+   (2026-08 decision below).
 
 An attestation does not prove the semantic review was *correct* — it
 proves a reviewer recorded a review against the current state. That
@@ -53,8 +57,9 @@ review may ever report `pass`:
 
 ### The workflow
 
-`/idd-judgment-review` (run automatically as the §9 review, or
-invoked directly):
+`/idd-judgment-review` (invoked explicitly by the contributor — never
+run automatically; §9 recommends it at session end and leaves the
+decision to the contributor):
 
 1. Compute the change-set fingerprints (shared helper, below).
 2. Read `active` `judgment` rules from `learned.md`.
@@ -70,13 +75,11 @@ invoked directly):
 
 ### Fingerprints
 
-One shared deterministic helper (`.github/idd/bin/idd-gate.sh`) is
-the single implementation used by the workflow and both gates —
-`git diff` text alone is not sufficient (it misses untracked files
-and is ambiguous when staged and working-tree states differ):
+One shared deterministic helper (`.github/idd/bin/idd-review.sh`) is
+the single implementation used by the workflow and the on-request
+verify — `git diff` text alone is not sufficient (it misses untracked
+files and is ambiguous when staged and working-tree states differ):
 
-- **`stagedFingerprint`** — the exact commit candidate: `HEAD` plus
-  the index tree (`git write-tree`).
 - **`worktreeFingerprint`** — the full proposed state: `HEAD` plus
   sorted `git status` records (added / modified / deleted / renamed /
   untracked, with rename source and destination and explicit deletion
@@ -90,38 +93,38 @@ and is ambiguous when staged and working-tree states differ):
 
 ### The attestation
 
-`.idd-state/judgment-review.json` (schema v1): head, both change-set
-fingerprints, rules fingerprint, UTC timestamp, reviewer identity
-(harness / agent / optional session), overall `result`, and a
-per-rule array (`ruleId`, `scope`, `matchedFiles`, `result`,
-`evidence`) plus `findings`. `pass` requires every applicable rule to
-be `pass` or evidenced `not-applicable`; any `fail` fails the whole
-attestation; any fingerprint mismatch makes it stale. `.idd-state/`
-is gitignored by the installer.
+`.idd-state/judgment-review.json`: fingerprints, UTC timestamp,
+reviewer identity, overall `result`, and per-unit review receipts.
+The schema has moved twice — v2 added per-rule verdicts with
+mandatory verified citations
+(`wiki::adversarial-review::attestation-schema-v2`), and v3 shards
+the payload into fingerprinted review units with receipt retention
+and an `escalations` list
+(`wiki::bounded-review-orchestration::rounds-receipts-and-escalation`).
+Any fingerprint mismatch makes the receipt stale. `.idd-state/` is
+gitignored by the installer.
 
-### The gates
+### Verification (the retired gates)
 
-- **Commit gate** (extends the existing in-session hook on
-  `git commit`): after the mechanical scan, if any staged file
-  matches an active judgment rule's scope, require a passing
-  attestation whose `stagedFingerprint` and `rulesFingerprint` match
-  the current state; deny with an actionable message otherwise.
-- **Completion gate** (`Stop` hook where the harness supports one):
-  same check against `worktreeFingerprint`, blocking task completion
-  with "run `/idd-judgment-review`" when missing, failed, or stale.
-  Where a harness cannot block completion, the same condition is part
-  of the §9 finalization protocol and the limitation is documented.
+The original design wired this verification into a blocking commit
+gate and a blocking completion (`Stop`) gate. Both are retired
+(2026-08): hooks a contributor opts into run deterministic mechanical
+checks only, and never require a review artifact. The same checks —
+receipt present, result recorded, fingerprints current, per-unit
+coverage, citations verified — now run as `idd-review.sh verify`, an
+on-request advisory report that blocks nothing.
 
-Scope matching inside the gates uses git's own `:(glob)` pathspec
-semantics (with `*` special-cased as always-match), so the gate and
-the compiler agree on what a glob means. Gates degrade silently when
+Scope matching uses git's own `:(glob)` pathspec semantics (with `*`
+special-cased as always-match), so the plan and the compiler agree on
+what a glob means. The helper degrades silently when
 `git`/`jq`/hashing tools are missing — adopting IDD never breaks a
-repo — and are inert when no changed file matches any judgment scope.
+repo — and reports an empty plan when no changed file matches any
+judgment scope.
 
 ## Anchors
 
-- `code::.github/idd/bin/idd-gate.sh` — the shared fingerprint and
-  gate helper
+- `code::.github/idd/bin/idd-review.sh` — the shared fingerprint,
+  plan, and verify helper
 - `code::.github/prompts/idd-judgment-review.prompt.md` — the review
   workflow
 - `code::.github/copilot-instructions.md::§9` — the finalization
@@ -151,6 +154,17 @@ repo — and are inert when no changed file matches any judgment scope.
 - **2026-07 — Attestations are session-local and disposable.** The
   attestation is evidence for the current change set, not history;
   it is gitignored, replaced whole on each run, and never committed.
+- **2026-08 — The gates are retired; review is manual and
+  advisory.** Field deployment showed the mandatory review plus
+  blocking gates turned a contributor aid into a repository
+  requirement: every clone inherited commit and completion blocks
+  regardless of consent, and repair loops re-dispatched reviewers
+  without bound. The review now starts only from an explicit
+  request, verification is the on-request `idd-review.sh verify`
+  report, and orchestration is bounded by
+  `wiki::bounded-review-orchestration::summary`. The fingerprint
+  model, the receipt's session-local lifecycle, and the
+  deterministic verification logic are retained.
 - **2026-07 — The reviewer model here is partially superseded by
   `wiki::adversarial-review::summary`.** This entry's workflow had
   the authoring session review its own diff; continued field

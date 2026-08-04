@@ -9,6 +9,13 @@
 > `hookSpecificOutput`. AC-1's `preToolUse`/`postToolUse` casing check
 > is historical and no longer passes by design; the surviving ACs
 > assert behavior that still holds.
+>
+> **Amended by `28-contributor-opt-in` and
+> `29-manual-bounded-judgment-review`** (2026-08): the installer no
+> longer writes `.github/hooks/idd.json` — a contributor installs it
+> via `idd-activate.sh enable copilot-hooks` — and the hook file
+> carries deterministic mechanical checks only (no attestation gate,
+> no `Stop` hook).
 
 This file is the primary execution and maintenance contract for
 compiling the in-session enforcement hooks into GitHub Copilot's

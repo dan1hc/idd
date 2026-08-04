@@ -10,11 +10,14 @@ size-adjusted violation rate was not improving. This entry defines the
 enforcement layer that closes that gap: `learned.md` remains the single
 authored source of truth, and its rules are **compiled** into the
 native enforcement surfaces of the session — linter config, generated
-checks run by session hooks on every edit and as a blocking gate when
-the session commits, path-scoped instruction files, and a mandatory
-in-session judgment review — rather than left to be rediscovered by
-the model each session. Everything runs in-session; IDD wires no CI
-and no external hook manager.
+checks run by opt-in session hooks on every edit and at commit,
+path-scoped instruction files, and an on-request judgment review —
+rather than left to be rediscovered by the model each session.
+Everything runs in-session; IDD wires no CI and no external hook
+manager. Every surface that injects instructions or intercepts the
+session is per-contributor opt-in
+(`wiki::contributor-opt-in::summary`), and hooks enforce
+deterministic checks only.
 
 ## Mental Model
 
@@ -77,14 +80,15 @@ priority order:
    snippet the check must flag and a `valid` one it must not — proving
    at authoring time that the check actually fires; `ast-grep test`
    re-proves it thereafter. Session hooks run only committed
-   deterministic code
-   — on every edit, and as a blocking commit gate when the session
+   deterministic code — on every edit, and again when the session
    runs `git commit` — no LLM call in the commit hot path; they fail
-   hard on a match. The hook
-   wiring compiles per-harness: the same two commands, each harness's
-   native envelope — Claude Code via `.claude/settings.json`, GitHub
-   Copilot (CLI, cloud coding agent, VS Code agent mode) via
-   `.github/hooks/idd.json`. Sync is asserted deterministically: every
+   hard on a match. Hooks exist only for contributors who enabled
+   them (`wiki::contributor-opt-in::mental-model`); the wiring
+   compiles per-harness: the same two commands, each harness's
+   native envelope — Claude Code via `.claude/settings.local.json`,
+   GitHub Copilot (CLI, cloud coding agent, VS Code agent mode) via
+   `.github/hooks/idd.json`, both activated by
+   `idd-activate.sh enable`. Sync is asserted deterministically: every
    `mechanical` rule maps to a live check-id and vice versa;
    `/idd-lint` surfaces drift.
 3. **Path-scoped instruction files.** `judgment` rules compile into
@@ -95,20 +99,24 @@ priority order:
    table. The `Scope` column is one or more plain globs, which serve
    the compiler and any LLM reading the table directly with a single
    unambiguous vocabulary.
-4. **In-session judgment review.** Before a diff is proposed for human
-   review, the session re-reviews it against *only* the scope-matched
-   `judgment` rules — a mandatory §9 pass, not an optional command.
-   The small focused context (rules + diff, nothing else) is why a
-   review pass succeeds where generation-time adherence fails. It
-   rides the session's existing model access: no extra credential, no
-   external service, no CI. Violations are fixed in the same session;
-   the author overrides by explicit choice, recorded in the diff
-   description. Review is executable and attestable, not procedural:
-   it runs as `/idd-judgment-review`, writes a fingerprint-bound
-   attestation, and deterministic gates verify that attestation at
-   commit and completion time — see `wiki::judgment-review::summary`.
-   The reviewer is a context-isolated adversarial subagent, never the
-   authoring context, and every verdict carries a citation
+4. **On-request judgment review.** When the contributor asks
+   (`/idd-judgment-review`), the change set is reviewed against
+   *only* the scope-matched `judgment` rules. The small focused
+   context (rules + diff, nothing else) is why a review pass succeeds
+   where generation-time adherence fails. It rides the session's
+   existing model access: no extra credential, no external service,
+   no CI. Review is executable and attestable, not procedural: it
+   writes a fingerprint-bound receipt, and `idd-review.sh verify`
+   checks that receipt deterministically on request — see
+   `wiki::judgment-review::summary`. Initiation is manual-only: no
+   hook triggers a review, and a missing or failing receipt blocks
+   nothing; at session end the agent recommends a review and leaves
+   the decision to the contributor. Orchestration is bounded —
+   policy-selected rule packs capped at `reviewerRuleCap`, unit
+   fingerprints with receipt retention, `maxAutomaticRounds` then
+   escalation (`wiki::bounded-review-orchestration::summary`). The
+   reviewer is a context-isolated, tool-less adversarial subagent,
+   never the authoring context, and every verdict carries a citation
    (`wiki::adversarial-review::summary`). Target 3 (compilation) is
    never evidence that this target ran; compilation guides
    generation, review evaluates the result, and only review may
@@ -121,29 +129,36 @@ priority order:
 
 ### Invariants
 
+- **Opt-in before anything active.** No enforcement surface —
+  instruction injection, edit hooks, commit-time checks — exists for
+  a contributor who has not explicitly enabled it
+  (`wiki::contributor-opt-in::summary`). Hooks, once enabled, run
+  deterministic checks only; nothing hook-side ever triggers a
+  judgment review or blocks on a review artifact.
 - **Compiled, not duplicated.** Generated artifacts carry a marker
   identifying them as compiler output; humans edit `learned.md`, never
   the compiled files.
-- **Additive installation.** IDD never solely owns a shared file. An
-  existing `CLAUDE.md` gets an IDD section behind
-  `<!-- idd:begin/end -->` markers, an existing `sgconfig.yml` gets an
-  appended rule directory, an existing `.claude/settings.json` is left
+- **Additive installation and activation.** IDD never solely owns a
+  shared file. An existing `sgconfig.yml` gets an appended rule
+  directory at install time; at activation time an existing
+  `CLAUDE.md` gets an IDD section behind `<!-- idd:begin/end -->`
+  markers, and an existing `.claude/settings.local.json` is left
   alone with merge guidance — never clobbered. Regeneration is
   idempotent within the markers.
 - **Deterministic hot path.** The edit and commit hooks run committed
   code only. LLM passes run at rule-approval time and in-session,
   where the model is already present and latency is acceptable.
 - **In-session — nothing else.** IDD wires no CI and no external hook
-  manager. Enforcement lives in the session's own hooks, including the
-  commit gate: the deterministic checks run when the session commits,
-  as a harness hook on `git commit`, not as a git hook.
+  manager. Enforcement lives in the session's own opt-in hooks,
+  including the commit-time run of the deterministic checks — a
+  harness hook on `git commit`, not a git hook.
 - **Measured, not vibed.** The success metric is the repeat-comment
   rate (reviewer comments matching a rule already on record), baselined
   by the 2026 audit and re-measured after ~20 post-redesign MRs.
-- **Evidence over recollection.** Mandatory LLM passes produce
-  artifacts deterministic gates can verify (the judgment attestation);
-  a pass that leaves no evidence is treated as a pass that did not
-  happen.
+- **Evidence over recollection.** LLM review passes produce
+  artifacts deterministic code can verify (the fingerprint-bound
+  review receipts); a pass that leaves no evidence is treated as a
+  pass that did not happen.
 - **Templates are never discoverable as live artifacts.** Shape
   templates live under `.github/idd/templates/`, outside every
   scanned rule directory, test directory, and hook guard — an inert
@@ -151,11 +166,14 @@ priority order:
   false confidence (observed twice: the live template rule of spec
   21, and `Configuration not found!` noise from the fixture template
   in the test path).
-- **Authoritative artifacts are tracked.** Checks, fixtures, hooks
-  wiring, prompts, learned rules, and `sgconfig.yml` are committed,
-  reviewable code; the installer and `/idd-lint` flag any of them
-  that are gitignored or untracked. Session-local state
-  (`.idd-state/`) is the deliberate exception and is never committed.
+- **Authoritative artifacts are tracked; activation surfaces are
+  local.** Checks, fixtures, hook templates, prompts, learned rules,
+  the review policy, and `sgconfig.yml` are committed, reviewable
+  code; the installer and `/idd-lint` flag any of them that are
+  gitignored or untracked. Per-contributor state is the deliberate
+  exception: `.idd-state/` (consent, receipts) and the activation
+  surfaces `idd-activate.sh` creates are local by design and never
+  committed by IDD.
 
 ## Anchors
 
@@ -186,6 +204,15 @@ priority order:
 
 ## Decisions
 
+- **2026-08 — Enforcement activates per contributor; the judgment
+  review is manual and bounded.** The 2026-08 overhaul
+  (`wiki::contributor-opt-in::summary`,
+  `wiki::bounded-review-orchestration::summary`) rescopes this layer
+  without weakening its content: checks, rules, and compilation are
+  unchanged, but no surface activates without that contributor's
+  explicit confirmation, hooks enforce deterministic checks only,
+  and the judgment review runs on request with capped fan-out and
+  bounded rounds instead of as a gated mandate.
 - **2026-07 — Enforcement machinery is reinstated and recorded as
   capability-invariant.** Early IDD shipped a pre-commit pattern
   checker; it was removed across rewrites, culminating in the v1.7.0
