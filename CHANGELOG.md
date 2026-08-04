@@ -1,3 +1,18 @@
+# [5.0.0](https://github.com/dan1hc/idd/compare/v4.0.0...v5.0.0) (2026-08-04)
+
+
+* feat!: contributor opt-in activation with manual bounded judgment review ([3d0f3bc](https://github.com/dan1hc/idd/commit/3d0f3bc87e83ed77d857138c3d4a79ae24a20046))
+
+
+### BREAKING CHANGES
+
+* installing no longer activates anything. Existing
+installs keep their legacy gating surfaces until migrated — run
+/idd-activate (or idd-activate.sh migrate) after upgrading, then
+re-enable the integrations you want.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+
 # [4.0.0](https://github.com/dan1hc/idd/compare/v3.0.0...v4.0.0) (2026-07-27)
 
 
